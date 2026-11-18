@@ -10,7 +10,10 @@
     "typecheck": "tsc --build",
     "test": "pnpm --recursive test",
     "lint": "pnpm --recursive lint",
-    "demo": "pnpm --filter @cafe/demos record"
+    "demo": "pnpm --filter @cafe/demos record",
+    "dev:mcp": "pnpm --filter @cafe/live-mcp dev",
+    "build:mcp": "pnpm --filter @cafe/live-mcp build",
+    "test:mcp": "pnpm --filter @cafe/live-mcp test"
   },
   "dependencies": {
     "@cafe/api": "workspace:*",

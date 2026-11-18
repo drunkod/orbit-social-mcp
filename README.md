@@ -1,3 +1,18 @@
+# Orbit Social — CAFE + Effect + MCP live customization
+
+**Working MVP:** a social/chat interface with real MCP Streamable HTTP plugin tools, Effect v4 persistence, runtime JavaScript extensions, live browser updates, and Tailscale Funnel deployment.
+
+**Start and connection instructions:** [packages/live-mcp/README.md](packages/live-mcp/README.md)
+
+- Live website (on the development Mac): https://tests-macbook-air.tail70b8a.ts.net:10000/
+- Remote MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp (bearer token required)
+- Local repository: ~/Documents/Work/cafe-mcp-live
+- `pnpm dev:mcp` — runs the local application; `pnpm test:mcp` — store tests
+
+The original upstream CAFE source code is preserved as the foundation of this fork. The new standalone on-device demo lives at `packages/live-mcp/`, using Effect v4 and the CAFE chat/event architecture without requiring Cloudflare credentials.
+
+---
+
 # cafe
 
 A minimal chat app built with the CAFE stack (Cloudflare, Alchemy, Foldkit, Effect).
