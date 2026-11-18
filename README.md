@@ -4,6 +4,10 @@
 
 **Start and connection instructions:** [packages/live-mcp/README.md](packages/live-mcp/README.md)
 
+- **[Reproduce ChatGPT connection with no OAuth and Tailscale Funnel](docs/CHATGPT_MCP_NOAUTH_TAILSCALE.md)** — full command-by-command runbook, URL mapping and troubleshooting
+- **[Implemented features and verification](docs/VERIFIED_MVP.md)** — live test evidence and screenshots
+- **GitHub:** https://github.com/drunkod/orbit-social-mcp (a fork of Effect-TS/cafe)
+
 - Live website (on the development Mac): https://tests-macbook-air.tail70b8a.ts.net:10000/
 - No-auth ChatGPT MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
 - Advanced authenticated MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin

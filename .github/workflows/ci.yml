@@ -22,6 +22,8 @@ env:
 
 jobs:
   check:
+    # This Cloudflare deployment pipeline belongs to the upstream CAFE project.
+    if: github.repository == 'Effect-TS/cafe'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,6 +41,8 @@ jobs:
         run: pnpm --filter @cafe/frontend test
 
   test:
+    # This Cloudflare deployment pipeline belongs to the upstream CAFE project.
+    if: github.repository == 'Effect-TS/cafe'
     needs: check
     runs-on: ubuntu-latest
     permissions:
@@ -68,6 +72,8 @@ jobs:
         run: pnpm --filter @cafe/frontend test:e2e
 
   deploy:
+    # This Cloudflare deployment pipeline belongs to the upstream CAFE project.
+    if: github.repository == 'Effect-TS/cafe'
     needs: test
     runs-on: ubuntu-latest
     outputs:
@@ -97,6 +103,8 @@ jobs:
           echo "url=$(grep -oE "  url: '[^']+'" deploy.log | tail -1 | cut -d"'" -f2)" >> "$GITHUB_OUTPUT"
 
   demo:
+    # This Cloudflare deployment pipeline belongs to the upstream CAFE project.
+    if: github.repository == 'Effect-TS/cafe'
     # Records the demo against this commit and uploads it to the public demos
     # bucket (stacks/github.ts): PRs get a demo comment linking it and the
     # preview, and main's is the one in the README. It deploys its own stages,
@@ -146,6 +154,8 @@ jobs:
           DEMO_BASE_URL: ${{ vars.DEMO_BASE_URL }}
 
   demo-comment:
+    # This Cloudflare deployment pipeline belongs to the upstream CAFE project.
+    if: github.repository == 'Effect-TS/cafe'
     # Links the demo and the preview, so it waits for both.
     if: github.event_name == 'pull_request'
     needs: [deploy, demo]

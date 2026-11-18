@@ -1,5 +1,7 @@
 # Orbit Social — live MCP-customizable chat app
 
+**Reproducible setup:** [docs/CHATGPT_MCP_NOAUTH_TAILSCALE.md](../../docs/CHATGPT_MCP_NOAUTH_TAILSCALE.md) · **[What was verified](../../docs/VERIFIED_MVP.md)**.
+
 A working Effect-powered extension of the [CAFE chat application](https://github.com/Effect-TS/cafe). It demonstrates connecting an AI/MCP client through a Tailscale Funnel HTTPS address and **changing a running social app by installing or editing JavaScript plugins**. Existing viewers see the change automatically over Server-Sent Events.
 
 ## What is real
