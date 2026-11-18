@@ -3,12 +3,15 @@ import { randomBytes } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { Effect } from 'effect'
+import * as Config from 'effect/Config'
 import { DemoStore } from './store.js'
 import { handleMcp } from './mcp.js'
 import { CafePreviewRooms } from './cafe-preview-rooms.js'
 import { MusicStore } from './music-store.js'
 
 const port = Number(process.env.PORT ?? '8787')
+// CAFE AGENTS.md: application configuration is parsed through Effect Config.
+const strudelPort = Effect.runSync(Config.Number('STRUDELLM_PORT').pipe(Config.withDefault(3105)))
 const root = process.cwd()
 const dist = path.resolve(root, '../frontend/dist')
 const store = new DemoStore()
@@ -73,7 +76,7 @@ const server = createServer(async (req, res) => {
     // Original StrudelLM remains an independently runnable Next.js application.
     // This proxy puts it behind the SAME Tailscale Funnel hostname as CAFE/MCP.
     if (route === '/music' || route.startsWith('/music/')) {
-      const nextPort = Number(process.env.STRUDELLM_PORT ?? '3105')
+      const nextPort = strudelPort
       const proxied = proxyRequest({
         hostname: '127.0.0.1', port: nextPort, path: req.url ?? '/music',
         method: req.method, headers: { ...req.headers, host: '127.0.0.1:' + nextPort }

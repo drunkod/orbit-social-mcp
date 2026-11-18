@@ -30,7 +30,7 @@ The full original StrudelLM app is preserved; the public /music/studio route is 
 
 ## Local development (following original upstream workflow)
 
-The CAFE root uses pnpm and Node 26, while StrudelLM uses its original **npm** workflow and requires Node 20–25 due to pinned better-sqlite3. **Use Node 24 for StrudelLM; do not change CAFE's existing Node version.** On the connected Mac, Node 24 is installed under /opt/homebrew/opt/node@24/bin.
+The CAFE root uses pnpm and Node 26, while StrudelLM uses its original **npm** workflow and requires Node 20–25 due to pinned better-sqlite3. **Use Node 24 for StrudelLM; do not change CAFE's existing Node version.** The imported package has a minimal, reviewed `allowScripts` addition pinned to `better-sqlite3@12.5.0`, `sharp@0.34.5` and `unrs-resolver@1.11.1` so clean npm 11 installs can run these required native setup scripts. The upstream npm lockfile is otherwise unchanged. On the connected Mac, Node 24 is installed under /opt/homebrew/opt/node@24/bin.
 
 Terminal A:
 
@@ -117,3 +117,25 @@ Verified on Node 24: npm ci, npm run lint (six upstream warnings; zero errors), 
 The original StrudelLM codebase is imported in full, but optional Tambo cloud authentication, magic-link email delivery and its production databases require their original credentials and were not reimplemented as part of the MCP bridge. The music engine is still a browser AudioContext: an always-on playout host is required for broadcast audio. The Studio currently generates tempo/volume slider controls from metadata; arbitrary UI generation inside ChatGPT would be a separate MCP Apps capability. A staged admin plugin can expose more of the Strudel DSL once a dedicated code review/sandbox model is chosen.
 
 **Licensing:** Source import carries AGPL-3.0; preserve license and attribution and assess whether network publication of a combined service entails source-sharing obligations.
+
+## CAFE `AGENTS.md` workflow evidence for the music PR
+
+The **CAFE root `AGENTS.md`** remains the authoritative repository-wide engineering contract, supplemented by upstream StrudelLM `CLAUDE.md` and its nested `src/components/tambo/AGENTS.md`. This implementation follows the documented red → green → real infrastructure → PR cycle:
+
+1. **Tests before implementation.** Extended the music browser e2e to require a playback acknowledgement and a recorded PR demo. The red test failed with `ENOENT: strudel-studio-demo.webm`. Added Playwright's actual video recorder, installed its FFmpeg helper, and reran the test green.
+2. **Isolated worktree and branch.** The source port was committed on `feat/strudellm-mcp-foundation`. Follow-up tests, CAFE Effect config conventions, demo recorder and CI were developed in an independent worktree on `feat/strudellm-mcp-workflow`, without editing the live Funnel server worktree.
+3. **Local suites and real-browser infrastructure.** `pnpm typecheck`, `pnpm lint`, the existing Foldkit Story/Scene tests (26 passing), MCP unit tests (5 passing), original StrudelLM `npm ci`/`npm run lint`/`npm run build`, and an isolated pair of production HTTP servers using the same MCP/Strudel code all passed. The new PR acceptance script verifies API tools, original CAFE chat and plugin behavior, audio-engine playback acknowledgement, generated slider mutations, mobile rendering, and a real recorded WebM demo.
+4. **GitHub PR gate.** `.github/workflows/music-pr.yml` reproduces those steps on Node 24 in CI, uploads browser screenshots/video/server logs and posts a demo-artifact link on the PR. The original upstream CAFE workflow and StrudelLM workflow are retained.
+5. **Cloudflare-specific limit.** `pnpm exec alchemy provider check-env --provider Cloudflare` reports missing `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_API_KEY`. Therefore the **Cloudflare test deployment and per-PR Cloudflare preview cannot yet be verified or enabled in this fork**. The previously verified Tailscale Funnel and the separate CI production HTTP servers are real servers, but neither is a Cloudflare PR preview. Add Cloudflare credentials with a dedicated Alchemy testing profile before claiming that gate is complete; do not expose tokens in source or logs.
+
+To reproduce the isolated PR demo locally after building both applications:
+
+~~~bash
+cd ~/Documents/Work/cafe-mcp-music-workflow
+pnpm --filter @cafe/live-mcp build
+(cd integrations/strudellm && PATH="/opt/homebrew/opt/node@24/bin:$PATH" npm ci && npm run build)
+pnpm --filter @cafe/live-mcp exec playwright install ffmpeg
+MUSIC_ARTIFACT_DIR=/tmp/cafe-music-review bash scripts/test-music-pr.sh
+~~~
+
+The test runner uses its own HTTP ports `8877` and `3107` and cleans up those processes afterward. The review artifact includes `strudel-studio-demo.webm`, two Studio screenshots, and server logs.

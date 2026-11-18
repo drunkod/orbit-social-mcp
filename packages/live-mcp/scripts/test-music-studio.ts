@@ -1,16 +1,24 @@
 import assert from 'node:assert/strict'
+import { mkdir, stat, unlink } from 'node:fs/promises'
+import path from 'node:path'
 import { chromium } from 'playwright'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
 const base = process.env.MUSIC_DEMO_URL ?? 'https://tests-macbook-air.tail70b8a.ts.net:10000'
 const mcpUrl = process.env.MUSIC_MCP_URL ?? 'https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp'
+const artifactDir = process.env.MUSIC_ARTIFACT_DIR
+if (artifactDir) await mkdir(artifactDir, { recursive: true })
 const browser = await chromium.launch({
   headless: true,
   args: ['--autoplay-policy=no-user-gesture-required'],
   ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 })
-const page = await browser.newPage({ viewport: { width: 1440, height: 950 } })
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 950 },
+  ...(artifactDir ? { recordVideo: { dir: artifactDir, size: { width: 1440, height: 950 } } } : {})
+})
+const page = await context.newPage()
 const errors: string[] = []
 page.on('pageerror', error => errors.push(error.message))
 const client = new Client({ name: 'strudellm-e2e', version: '0.1.0' })
@@ -32,8 +40,27 @@ try {
   await page.getByText('126 BPM').first().waitFor({ timeout: 15000 })
   await page.getByText('RolandTR909', { exact: false }).last().waitFor()
   const enable = page.getByRole('button', { name: 'Enable Audio' })
-  if (await enable.isEnabled()) await enable.click()
-  await page.screenshot({ path: '/tmp/strudel-mcp-studio.png', fullPage: true })
+  // A true MCP/Strudel integration check must prove browser audio was unlocked.
+  await enable.waitFor({ state: 'visible' })
+  await page.waitForFunction(() => {
+    const button = [...document.querySelectorAll('button')].find(node => node.textContent?.includes('Enable Audio'))
+    return button instanceof HTMLButtonElement && !button.disabled
+  }, undefined, { timeout: 90000 })
+  await enable.click()
+  let confirmed = false
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const status = await (await page.request.get(base + '/music-sync/state')).json() as {
+      feedback?: { status: string; revision: number } | null
+      revision: number
+    }
+    if (status.feedback?.status === 'playing' && status.feedback.revision === status.revision) {
+      confirmed = true
+      break
+    }
+    await page.waitForTimeout(1000)
+  }
+  assert.ok(confirmed, 'Strudel engine must acknowledge playing after browser audio is enabled')
+  await page.screenshot({ path: path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio.png'), fullPage: true })
   const value = await page.getByRole('slider').first().inputValue()
   assert.equal(value, '126')
   await page.getByRole('slider').first().fill('138')
@@ -43,15 +70,28 @@ try {
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } })
   await mobile.goto(base + '/music/studio', { waitUntil: 'domcontentloaded', timeout: 90000 })
   await mobile.getByText('Live code editor & player').waitFor({ timeout: 30000 })
-  await mobile.screenshot({ path: '/tmp/strudel-mcp-studio-mobile.png', fullPage: true })
+  await mobile.screenshot({ path: path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio-mobile.png'), fullPage: true })
+  if (artifactDir) await page.waitForTimeout(1400) // visible final state for review recording
   console.log(JSON.stringify({
     result: 'PASS', liveMcpMusic: true, generatedCodeVisible: true,
     generatedSliders: 2, tempoSliderChangesServerCode: true,
-    errors, screenshots: ['/tmp/strudel-mcp-studio.png', '/tmp/strudel-mcp-studio-mobile.png']
+    errors, screenshots: [path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio.png'), path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio-mobile.png')]
   }, null, 2))
   if (errors.length) process.exitCode = 1
   await mobile.close()
 } finally {
   await client.close()
+  await context.close() // Must flush Playwright's video before saveAs.
+  if (artifactDir) {
+    const recorded = page.video()
+    assert.ok(recorded, 'Playwright video capture must be active in PR demo mode')
+    await recorded.saveAs(path.join(artifactDir, 'strudel-studio-demo.webm'))
+    await unlink(await recorded.path()) // Keep just one CI artifact, not Playwright's temporary copy.
+  }
   await browser.close()
+  if (artifactDir) {
+    const video = path.join(artifactDir, 'strudel-studio-demo.webm')
+    const data = await stat(video)
+    assert.ok(data.size > 15000, 'Recorded review demo must be larger than 15 KB')
+  }
 }

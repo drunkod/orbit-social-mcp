@@ -8,7 +8,7 @@ A fork of [Effect-TS/cafe](https://github.com/Effect-TS/cafe) that **keeps the o
 
 **[Research: 48 approaches to live UI customization and MCP-generated interfaces](docs/LIVE_UI_MCP_METHODS_RESEARCH.md)** — comparison tables, existing GitHub projects, broadcast overlay examples, advantages/disadvantages, and technical selection guide.
 
-**[StrudelLM × MCP Generative Music Studio](docs/STRUDELLM_MCP_PORT_README.md)** — complete upstream StrudelLM source retained, music composition via ChatGPT MCP, code-driven sound engine and live tempo/volume controls. [Port plan](docs/STRUDELLM_MCP_PORT_PLAN.md).
+**[StrudelLM × MCP Generative Music Studio](docs/STRUDELLM_MCP_PORT_README.md)** — complete upstream StrudelLM source retained, music composition via ChatGPT MCP, code-driven sound engine and live tempo/volume controls; new PR CI records a browser demo following CAFE `AGENTS.md`. [Port plan](docs/STRUDELLM_MCP_PORT_PLAN.md).
 
 ![StrudelLM MCP Music Studio screenshot](docs/assets/strudellm-mcp-studio.png)
 
