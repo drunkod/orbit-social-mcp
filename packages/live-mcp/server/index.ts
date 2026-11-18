@@ -51,15 +51,17 @@ const server = createServer(async (req, res) => {
 
     if (route === '/health') return json(res, 200, { ok: true, name: 'orbit-mcp', revision: store.publicState().revision })
     if (route === '/mcp') {
+      return await handleMcp(req, res, store, 'public')
+    }
+    if (route === '/mcp-admin') {
       if (req.headers.authorization !== 'Bearer ' + mcpToken) {
         res.writeHead(401, {
           'Content-Type': 'application/json',
-          'WWW-Authenticate': 'Bearer realm="Orbit MCP demo"',
-          'Access-Control-Allow-Origin': '*'
+          'WWW-Authenticate': 'Bearer realm="Orbit MCP admin"'
         })
-        return res.end(JSON.stringify({ error: 'Connect using Authorization: Bearer <token> from data/.mcp-token' }))
+        return res.end(JSON.stringify({ error: 'Admin MCP requires bearer token' }))
       }
-      return await handleMcp(req, res, store)
+      return await handleMcp(req, res, store, 'admin')
     }
 
     if (route === '/api/state' && req.method === 'GET') return json(res, 200, store.publicState())

@@ -10,7 +10,7 @@ const page = await browser.newPage({ viewport: { width: 1512, height: 950 }, dev
 const errors: string[] = []
 page.on('pageerror', error => errors.push(error.message))
 const client = new Client({ name: 'orbit-visual-test', version: '0.1.0' })
-const transport = new StreamableHTTPClientTransport(new URL(base + '/mcp'), {
+const transport = new StreamableHTTPClientTransport(new URL(base + '/mcp-admin'), {
   requestInit: { headers: { Authorization: 'Bearer ' + token } }
 })
 await client.connect(transport)

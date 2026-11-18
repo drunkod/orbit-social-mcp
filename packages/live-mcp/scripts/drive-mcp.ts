@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 
-const endpoint = process.env.MCP_ENDPOINT || 'http://127.0.0.1:8787/mcp'
+const endpoint = process.env.MCP_ENDPOINT || 'http://127.0.0.1:8787/mcp-admin'
 const token = process.env.MCP_DEMO_TOKEN || readFileSync('data/.mcp-token', 'utf8').trim()
 const client = new Client({ name: 'orbit-demo-controller', version: '0.1.0' })
 const transport = new StreamableHTTPClientTransport(new URL(endpoint), {

@@ -6,7 +6,7 @@ A working Effect-powered extension of the [CAFE chat application](https://github
 
 - Polished React social/chat UI with shared persisted chat messages
 - Effect v4 state transitions and persistence
-- Real MCP **Streamable HTTP** tools at /mcp (official TypeScript MCP SDK)
+- Real MCP **Streamable HTTP** tools at public /mcp and token-protected /mcp-admin (official TypeScript MCP SDK)
 - Plugin JavaScript source installation, replacement, activation, deactivation and removal
 - Browser ESM plugin loading without app rebuild or page refresh
 - CSS theme, announcement, sidebar widget and executable message decoration hooks
@@ -19,7 +19,7 @@ This repository retains the upstream CAFE source and adds packages/live-mcp. The
 
 MCP client -> Tailscale Funnel -> Node HTTP + MCP SDK -> Effect DemoStore -> state JSON -> SSE -> React app -> JS plugins (dynamic import)
 
-The app is a demo. Remote browser plugins are trusted code, not a hardened sandbox. An automatically generated bearer token is required for MCP access. Do not put that token in a URL or make this project a multi-user service without proper auth and isolation.
+The public no-auth endpoint is limited to preset themes and server-generated visual plugins; it never accepts arbitrary JS source. Powerful JS editing tools remain token-protected at /mcp-admin. This is a demo, not a multi-user security-hardened service.
 
 ## Start
 
@@ -50,42 +50,52 @@ In another terminal:
 
 Open the browser before running these commands. The app updates without refreshing. Script imports the token from data/.mcp-token.
 
-### Connect an external MCP client
+### ChatGPT setup: no OAuth, no token
 
-Use endpoint:
+ChatGPT web > Plugins > Add custom MCP server.
 
-  https://YOUR-TAILSCALE-NODE.YOUR-TAILNET.ts.net:10000/mcp
+- Description: Orbit Social — customize a running social chat app through MCP.
+- Server URL: https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
+- Authentication: no authentication, with no advanced OAuth settings.
+- Acknowledge the connector warning and select Create as a plugin.
 
-With the HTTP header:
+Fallback public URL: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp
 
-  Authorization: Bearer YOUR_TOKEN
+Both public endpoints have been tested over HTTPS without a token.
 
-For example an MCP client configuration using URL and headers:
+Try: "Call get_app_info, then customize_interface to create a fresh blue theme, welcome banner, and sidebar widget."
 
-  {
-    "mcpServers": {
-      "orbit": {
-        "url": "https://YOUR-TAILSCALE-NODE.YOUR-TAILNET.ts.net:10000/mcp",
-        "headers": {
-          "Authorization": "Bearer YOUR_TOKEN"
-        }
-      }
-    }
-  }
+No-auth tools:
+- get_app_info
+- list_demo_themes
+- set_demo_theme
+- customize_interface
 
-Actual MCP client support for headers varies.
+If ChatGPT shows "A service needed to create the app is temporarily unavailable", that is a ChatGPT service or permissions problem. Verify that the endpoint works by running pnpm exec tsx scripts/test-chatgpt-noauth.ts and retry the ChatGPT creation flow when available.
 
-### Tailscale Funnel
+### Advanced JS plugin editing (bearer token)
 
-Keep existing Tailscale routes untouched. Use dedicated HTTPS port 10000:
+Administrative endpoint: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin
+
+Send Authorization: Bearer YOUR_TOKEN where YOUR_TOKEN is stored in data/.mcp-token (git-ignored). This endpoint supports arbitrary plugin-source editing and must not be publicly unauthenticated.
+
+### Tailscale Funnel routes
+
+The Mac serves the app on port 10000 and adds a path-only 443 alias without disturbing the pre-existing root app:
 
   tailscale funnel --bg --https=10000 8787
+  tailscale funnel --bg --https=443 --set-path=/orbit-mcp http://127.0.0.1:8787/mcp
   tailscale funnel status
 
-Only enable Funnel after the MCP bearer token is present. To stop this one forwarding rule use Tailscale's per-port configuration, not "tailscale funnel reset" (which can remove unrelated routes).
+Remove only the alias using:
+  tailscale funnel --https=443 --set-path=/orbit-mcp off
 
-## MCP tools
+Remove only the dedicated app using:
+  tailscale funnel --https=10000 off
 
+Avoid tailscale funnel reset because it removes unrelated routes.
+
+### Admin MCP tools
 - app_overview
 - list_plugins
 - get_plugin_source

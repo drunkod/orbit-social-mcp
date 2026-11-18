@@ -26,7 +26,7 @@ const failure = (error: unknown) => ({
   content: [{ type: 'text' as const, text: error instanceof Error ? error.message : String(error) }]
 })
 
-function registerTools(server: McpServer, store: DemoStore) {
+function registerAdminTools(server: McpServer, store: DemoStore) {
   server.registerTool('app_overview', {
     description: 'Get app state, plugin interface and instructions for writing hot-reloadable UI plugins.',
     inputSchema: {}
@@ -112,9 +112,101 @@ function registerTools(server: McpServer, store: DemoStore) {
   })
 }
 
-export async function handleMcp(req: IncomingMessage, res: ServerResponse, store: DemoStore) {
+function registerPublicTools(server: McpServer, store: DemoStore) {
+  server.registerTool('get_app_info', {
+    description: 'Inspect the Orbit Social demo, current interface, and safe customization options. No authorization required.',
+    inputSchema: {},
+    annotations: { readOnlyHint: true }
+  }, async () => success({
+    app: 'Orbit Social',
+    purpose: 'Live MCP-driven visual customization of a demo social chat app',
+    availableThemes: ['default', 'aurora', 'focus'],
+    activePlugins: store.publicState().plugins.filter(p => p.enabled).map(p => ({ id: p.id, name: p.name })),
+    revision: store.publicState().revision,
+    visualCustomization: 'Use customize_interface to change colors, banner and plugin-created widget without a rebuild',
+    web: 'https://tests-macbook-air.tail70b8a.ts.net:10000/'
+  }))
+
+  server.registerTool('list_demo_themes', {
+    description: 'List safe preset visual plugins that can be toggled live in Orbit Social.',
+    inputSchema: {},
+    annotations: { readOnlyHint: true }
+  }, async () => success([
+    { id: 'default', name: 'Orbit Classic', description: 'Original violet Orbit theme' },
+    { id: 'aurora', name: 'Aurora Mode', description: 'Expressive violet theme and highlighted chat messages' },
+    { id: 'focus', name: 'Focus Flow', description: 'Emerald theme with clean, compact chat' }
+  ]))
+
+  server.registerTool('set_demo_theme', {
+    description: 'Switch a built-in visual plugin. Changes appear immediately in connected Orbit Social browser tabs.',
+    inputSchema: { theme: z.enum(['default', 'aurora', 'focus']) },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+  }, async ({ theme }) => {
+    try {
+      for (const plugin of store.fullState().plugins) {
+        const target = plugin.id === theme
+        if (plugin.enabled !== target) await store.setEnabled(plugin.id, target)
+      }
+      return success({ ok: true, theme, revision: store.publicState().revision })
+    } catch (error) { return failure(error) }
+  })
+
+  server.registerTool('customize_interface', {
+    description: 'Create or update a safe visual plugin to customize the running Orbit Social interface: accent color, header, tagline, icon and sidebar widget. No raw code accepted. Refresh not needed.',
+    inputSchema: {
+      accent: z.string().regex(/^#[a-fA-F0-9]{6}$/).describe('A six-digit hex color, for example #f97316'),
+      title: z.string().trim().min(1).max(90).describe('A new welcome banner headline'),
+      description: z.string().trim().min(1).max(180).describe('Short explanatory sentence under the headline'),
+      emoji: z.string().max(6).optional().describe('Small decorative symbol e.g. ✨'),
+      widget_title: z.string().max(40).optional().describe('Title of a new plugin-controlled sidebar widget'),
+      widget_value: z.string().max(50).optional().describe('Highlighted widget value e.g. Designed by ChatGPT')
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
+  }, async ({ accent, title, description, emoji, widget_title, widget_value }) => {
+    try {
+      const color = accent.toLowerCase()
+      const soft = color + '18'
+      const payload = {
+        id: 'chatgpt-visual',
+        name: 'ChatGPT Visual Designer',
+        theme: {
+          accent: color,
+          accentSoft: soft,
+          appBackground: '#f6f6fb',
+          cardBackground: '#ffffff',
+          radius: '22px'
+        },
+        banner: { eyebrow: 'CUSTOMIZED LIVE THROUGH MCP', title, description, emoji: emoji ?? '✦' },
+        widget: {
+          icon: emoji ?? '✦',
+          title: widget_title || 'Designed through MCP',
+          value: widget_value || 'Live customization',
+          subtitle: 'This widget was generated without rebuilding the application'
+        }
+      }
+      const source = 'export default ' + JSON.stringify(payload, null, 2) + ';\n'
+      const existing = store.getPlugin(payload.id)
+      if (existing) {
+        await store.updatePlugin(payload.id, source)
+        if (!existing.enabled) await store.setEnabled(payload.id, true)
+      } else {
+        await store.installPlugin({
+          id: payload.id,
+          name: payload.name,
+          description: 'Visual theme generated through unauthenticated MCP demo',
+          source, enabled: true
+        })
+      }
+      return success({ ok: true, plugin: payload.id, accent: color, title, revision: store.publicState().revision })
+    } catch (error) { return failure(error) }
+  })
+}
+
+export async function handleMcp(req: IncomingMessage, res: ServerResponse, store: DemoStore, mode: 'public' | 'admin' = 'public') {
+
   const server = new McpServer({ name: 'orbit-live-customization', version: '0.1.0' })
-  registerTools(server, store)
+  if (mode === 'admin') registerAdminTools(server, store)
+  else registerPublicTools(server, store)
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
   try {
     await server.connect(transport)

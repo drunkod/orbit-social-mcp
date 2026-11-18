@@ -5,7 +5,8 @@
 **Start and connection instructions:** [packages/live-mcp/README.md](packages/live-mcp/README.md)
 
 - Live website (on the development Mac): https://tests-macbook-air.tail70b8a.ts.net:10000/
-- Remote MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp (bearer token required)
+- No-auth ChatGPT MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
+- Advanced authenticated MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin
 - Local repository: ~/Documents/Work/cafe-mcp-live
 - `pnpm dev:mcp` — runs the local application; `pnpm test:mcp` — store tests
 

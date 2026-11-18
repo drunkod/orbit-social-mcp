@@ -145,7 +145,9 @@ function App() {
     finally { setSending(false) }
   }
 
-  const mcpUrl = window.location.origin + '/mcp'
+  const mcpUrl = window.location.hostname === 'tests-macbook-air.tail70b8a.ts.net'
+    ? 'https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp'
+    : window.location.origin + '/mcp'
   const copyMcp = async () => {
     try { await navigator.clipboard.writeText(mcpUrl); setCopied(true); setTimeout(() => setCopied(false), 1600) }
     catch { window.prompt('Copy MCP endpoint:', mcpUrl) }
@@ -207,7 +209,7 @@ function App() {
               <div className="hero-pills"><span><Users size={15}/> 248 members</span><span><span className="hero-online"/> 18 online</span></div>
               <span className="hero-symbol">{settings.banner?.emoji}</span>
             </div>
-            {showHelp && <div className="help-panel"><strong>How to customize this app with MCP</strong><p>Connect an MCP-capable AI client to <code>{mcpUrl}</code> using the local bearer token stored in <code>data/.mcp-token</code>. Ask it to enable Aurora Mode, install a JavaScript plugin, or rewrite a plugin. Every connected browser sees the result without reloading.</p><button onClick={copyMcp}>{copied ? 'Copied' : 'Copy connection URL'} <Copy size={14}/></button></div>}
+            {showHelp && <div className="help-panel"><strong>How to customize this app with MCP</strong><p>Connect an MCP-capable AI client to <code>{mcpUrl}</code> without authentication. For advanced JavaScript editing, use <code>/mcp-admin</code> with the token stored in <code>data/.mcp-token</code>. Ask it to enable Aurora Mode, install a JavaScript plugin, or rewrite a plugin. Every connected browser sees the result without reloading.</p><button onClick={copyMcp}>{copied ? 'Copied' : 'Copy connection URL'} <Copy size={14}/></button></div>}
             <div className="conversation-heading">
               <div><div className="eyebrow">CONVERSATION</div><h2>What's happening in #{channel === 'home' || channel === 'explore' || channel === 'messages' ? 'general' : channel}<span className="heading-spark">✳</span></h2><p>A little place for big ideas. Join the conversation.</p></div>
               <button className="more-button" onClick={() => setShowHelp(v => !v)}><MoreHorizontal size={20}/></button>
