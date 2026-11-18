@@ -6,6 +6,8 @@ A fork of [Effect-TS/cafe](https://github.com/Effect-TS/cafe) that **keeps the o
 
 **[Read the CAFE MCP integration guide](docs/CAFE_MCP_INTEGRATION.md)** — implementation details, screenshots, run commands, original chat behavior and testing.
 
+**[Research: 48 approaches to live UI customization and MCP-generated interfaces](docs/LIVE_UI_MCP_METHODS_RESEARCH.md)** — comparison tables, existing GitHub projects, broadcast overlay examples, advantages/disadvantages, and technical selection guide.
+
 - **Live CAFE chat preview:** https://tests-macbook-air.tail70b8a.ts.net:10000/
 - **Existing public ChatGPT MCP:** https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
 - **Advanced authenticated plugin editing:** https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin
