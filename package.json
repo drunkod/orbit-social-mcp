@@ -13,7 +13,10 @@
     "demo": "pnpm --filter @cafe/demos record",
     "dev:mcp": "pnpm --filter @cafe/live-mcp dev",
     "build:mcp": "pnpm --filter @cafe/live-mcp build",
-    "test:mcp": "pnpm --filter @cafe/live-mcp test"
+    "test:mcp": "pnpm --filter @cafe/live-mcp test",
+    "dev:music": "bash scripts/dev-music-mcp.sh",
+    "lint:music": "cd integrations/strudellm && npm run lint",
+    "build:music": "cd integrations/strudellm && npm run build"
   },
   "dependencies": {
     "@cafe/api": "workspace:*",

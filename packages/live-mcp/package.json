@@ -9,7 +9,8 @@
     "start": "tsx server/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:visual": "tsx scripts/test-cafe-plugins.ts"
+    "test:visual": "tsx scripts/test-cafe-plugins.ts",
+    "test:music": "tsx scripts/smoke-music.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",

@@ -5,3 +5,4 @@ dist/
 data/state.json
 data/.mcp-token
 data/cafe-preview-rooms.json
+data/music-state.json

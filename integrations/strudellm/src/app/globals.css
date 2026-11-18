@@ -1,0 +1,609 @@
+@import "tailwindcss";
+
+/* Custom font imports for editor fonts not available on Google Fonts */
+@font-face {
+    font-family: "Hack";
+    src: url("https://cdn.jsdelivr.net/npm/hack-font@3/build/web/fonts/hack-regular.woff2")
+        format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Monocraft";
+    src: url("https://cdn.jsdelivr.net/gh/IdreesInc/Monocraft@main/dist/Monocraft.woff2")
+        format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+/* ========================================
+   THEME SYSTEM
+
+   @theme registers color names with Tailwind using CSS var references.
+   :root defines the actual values, [data-theme] overrides them.
+   ======================================== */
+
+@theme {
+    --color-background: var(--theme-background);
+    --color-foreground: var(--theme-foreground);
+    --color-card: var(--theme-card);
+    --color-card-foreground: var(--theme-card-foreground);
+    --color-popover: var(--theme-popover);
+    --color-popover-foreground: var(--theme-popover-foreground);
+    --color-primary: var(--theme-primary);
+    --color-primary-foreground: var(--theme-primary-foreground);
+    --color-secondary: var(--theme-secondary);
+    --color-secondary-foreground: var(--theme-secondary-foreground);
+    --color-muted: var(--theme-muted);
+    --color-muted-foreground: var(--theme-muted-foreground);
+    --color-accent: var(--theme-accent);
+    --color-accent-foreground: var(--theme-accent-foreground);
+    --color-destructive: var(--theme-destructive);
+    --color-success: var(--theme-success);
+    --color-success-foreground: var(--theme-success-foreground);
+    --color-border: var(--theme-border);
+    --color-input: var(--theme-input);
+    --color-ring: var(--theme-ring);
+    --color-chart-1: var(--theme-chart-1);
+    --color-chart-2: var(--theme-chart-2);
+    --color-chart-3: var(--theme-chart-3);
+    --color-chart-4: var(--theme-chart-4);
+    --color-chart-5: var(--theme-chart-5);
+    --color-container: var(--theme-container);
+    --color-backdrop: var(--theme-backdrop);
+    --color-muted-backdrop: var(--theme-muted-backdrop);
+}
+
+:root {
+    /* Default dark theme - Strudel-inspired colors */
+    --theme-background: oklch(0.13 0.01 260);
+    --theme-foreground: oklch(0.93 0 0);
+    --theme-card: oklch(0.18 0.01 260);
+    --theme-card-foreground: oklch(0.93 0 0);
+    --theme-popover: oklch(0.18 0.01 260);
+    --theme-popover-foreground: oklch(0.93 0 0);
+    --theme-primary: oklch(0.75 0.18 145);
+    --theme-primary-foreground: oklch(0.13 0 0);
+    --theme-secondary: oklch(0.25 0.01 260);
+    --theme-secondary-foreground: oklch(0.93 0 0);
+    --theme-muted: oklch(0.22 0.01 260);
+    --theme-muted-foreground: oklch(0.65 0 0);
+    --theme-accent: oklch(0.65 0.15 145);
+    --theme-accent-foreground: oklch(0.13 0 0);
+    --theme-destructive: oklch(0.65 0.2 25);
+    --theme-success: oklch(0.6 0.2 145);
+    --theme-success-foreground: oklch(0.98 0 0);
+    --theme-border: oklch(0.28 0.01 260);
+    --theme-input: oklch(0.22 0.01 260);
+    --theme-ring: oklch(0.75 0.18 145);
+    --theme-chart-1: oklch(0.75 0.18 145);
+    --theme-chart-2: oklch(0.7 0.15 200);
+    --theme-chart-3: oklch(0.65 0.18 280);
+    --theme-chart-4: oklch(0.7 0.15 60);
+    --theme-chart-5: oklch(0.65 0.18 330);
+    --theme-container: oklch(0.16 0.01 260);
+    --theme-backdrop: oklch(0 0 0 / 0.5);
+    --theme-muted-backdrop: oklch(0 0 0 / 0.3);
+
+    /* Layout variables */
+    --radius: 0.5rem;
+    --panel-left-width: 500px;
+    --panel-right-width: 500px;
+    --sidebar-width: 3rem;
+}
+
+/* ========================================
+   EDITOR THEMES
+   Set via data-theme attribute on :root
+   Override --color-* variables directly
+   ======================================== */
+
+/* Dark Theme: Dracula */
+:root[data-theme="dracula"] {
+    --theme-background: #282a36;
+    --theme-foreground: #f8f8f2;
+    --theme-card: #21222c;
+    --theme-card-foreground: #f8f8f2;
+    --theme-popover: #21222c;
+    --theme-popover-foreground: #f8f8f2;
+    --theme-primary: #bd93f9;
+    --theme-primary-foreground: #282a36;
+    --theme-secondary: #44475a;
+    --theme-secondary-foreground: #f8f8f2;
+    --theme-muted: #44475a;
+    --theme-muted-foreground: #6272a4;
+    --theme-accent: #ff79c6;
+    --theme-accent-foreground: #282a36;
+    --theme-destructive: #ff5555;
+    --theme-success: #50fa7b;
+    --theme-success-foreground: #282a36;
+    --theme-border: #44475a;
+    --theme-input: #44475a;
+    --theme-ring: #bd93f9;
+    --theme-chart-1: #bd93f9;
+    --theme-chart-2: #8be9fd;
+    --theme-chart-3: #ff79c6;
+    --theme-chart-4: #f1fa8c;
+    --theme-chart-5: #50fa7b;
+    --theme-container: #21222c;
+    --theme-backdrop: rgba(0, 0, 0, 0.5);
+    --theme-muted-backdrop: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark Theme: Tokyo Night */
+:root[data-theme="tokyo-night"] {
+    --theme-background: #1a1b26;
+    --theme-foreground: #c0caf5;
+    --theme-card: #16161e;
+    --theme-card-foreground: #c0caf5;
+    --theme-popover: #16161e;
+    --theme-popover-foreground: #c0caf5;
+    --theme-primary: #7aa2f7;
+    --theme-primary-foreground: #1a1b26;
+    --theme-secondary: #24283b;
+    --theme-secondary-foreground: #c0caf5;
+    --theme-muted: #24283b;
+    --theme-muted-foreground: #565f89;
+    --theme-accent: #bb9af7;
+    --theme-accent-foreground: #1a1b26;
+    --theme-destructive: #f7768e;
+    --theme-success: #9ece6a;
+    --theme-success-foreground: #1a1b26;
+    --theme-border: #292e42;
+    --theme-input: #24283b;
+    --theme-ring: #7aa2f7;
+    --theme-chart-1: #7aa2f7;
+    --theme-chart-2: #7dcfff;
+    --theme-chart-3: #bb9af7;
+    --theme-chart-4: #e0af68;
+    --theme-chart-5: #9ece6a;
+    --theme-container: #16161e;
+    --theme-backdrop: rgba(0, 0, 0, 0.5);
+    --theme-muted-backdrop: rgba(0, 0, 0, 0.3);
+}
+
+/* Dark Theme: Nord */
+:root[data-theme="nord"] {
+    --theme-background: #2e3440;
+    --theme-foreground: #eceff4;
+    --theme-card: #3b4252;
+    --theme-card-foreground: #eceff4;
+    --theme-popover: #3b4252;
+    --theme-popover-foreground: #eceff4;
+    --theme-primary: #88c0d0;
+    --theme-primary-foreground: #2e3440;
+    --theme-secondary: #434c5e;
+    --theme-secondary-foreground: #eceff4;
+    --theme-muted: #434c5e;
+    --theme-muted-foreground: #d8dee9;
+    --theme-accent: #81a1c1;
+    --theme-accent-foreground: #2e3440;
+    --theme-destructive: #bf616a;
+    --theme-success: #a3be8c;
+    --theme-success-foreground: #2e3440;
+    --theme-border: #4c566a;
+    --theme-input: #434c5e;
+    --theme-ring: #88c0d0;
+    --theme-chart-1: #88c0d0;
+    --theme-chart-2: #81a1c1;
+    --theme-chart-3: #b48ead;
+    --theme-chart-4: #ebcb8b;
+    --theme-chart-5: #a3be8c;
+    --theme-container: #3b4252;
+    --theme-backdrop: rgba(0, 0, 0, 0.5);
+    --theme-muted-backdrop: rgba(0, 0, 0, 0.3);
+}
+
+/* Light Theme: GitHub Light */
+:root[data-theme="github-light"] {
+    --theme-background: #ffffff;
+    --theme-foreground: #24292f;
+    --theme-card: #f6f8fa;
+    --theme-card-foreground: #24292f;
+    --theme-popover: #ffffff;
+    --theme-popover-foreground: #24292f;
+    --theme-primary: #0969da;
+    --theme-primary-foreground: #ffffff;
+    --theme-secondary: #f6f8fa;
+    --theme-secondary-foreground: #24292f;
+    --theme-muted: #f6f8fa;
+    --theme-muted-foreground: #57606a;
+    --theme-accent: #8250df;
+    --theme-accent-foreground: #ffffff;
+    --theme-destructive: #cf222e;
+    --theme-success: #1a7f37;
+    --theme-success-foreground: #ffffff;
+    --theme-border: #d0d7de;
+    --theme-input: #f6f8fa;
+    --theme-ring: #0969da;
+    --theme-chart-1: #0969da;
+    --theme-chart-2: #1a7f37;
+    --theme-chart-3: #8250df;
+    --theme-chart-4: #bf8700;
+    --theme-chart-5: #cf222e;
+    --theme-container: #f6f8fa;
+    --theme-backdrop: rgba(0, 0, 0, 0.3);
+    --theme-muted-backdrop: rgba(0, 0, 0, 0.1);
+}
+
+/* Light Theme: Solarized Light */
+:root[data-theme="solarized-light"] {
+    --theme-background: #fdf6e3;
+    --theme-foreground: #657b83;
+    --theme-card: #eee8d5;
+    --theme-card-foreground: #657b83;
+    --theme-popover: #fdf6e3;
+    --theme-popover-foreground: #657b83;
+    --theme-primary: #268bd2;
+    --theme-primary-foreground: #fdf6e3;
+    --theme-secondary: #eee8d5;
+    --theme-secondary-foreground: #657b83;
+    --theme-muted: #eee8d5;
+    --theme-muted-foreground: #93a1a1;
+    --theme-accent: #2aa198;
+    --theme-accent-foreground: #fdf6e3;
+    --theme-destructive: #dc322f;
+    --theme-success: #859900;
+    --theme-success-foreground: #fdf6e3;
+    --theme-border: #93a1a1;
+    --theme-input: #eee8d5;
+    --theme-ring: #268bd2;
+    --theme-chart-1: #268bd2;
+    --theme-chart-2: #2aa198;
+    --theme-chart-3: #6c71c4;
+    --theme-chart-4: #b58900;
+    --theme-chart-5: #cb4b16;
+    --theme-container: #eee8d5;
+    --theme-backdrop: rgba(0, 0, 0, 0.3);
+    --theme-muted-backdrop: rgba(0, 0, 0, 0.1);
+}
+
+/* Light Theme: One Light */
+:root[data-theme="one-light"] {
+    --theme-background: #fafafa;
+    --theme-foreground: #383a42;
+    --theme-card: #f0f0f0;
+    --theme-card-foreground: #383a42;
+    --theme-popover: #ffffff;
+    --theme-popover-foreground: #383a42;
+    --theme-primary: #4078f2;
+    --theme-primary-foreground: #ffffff;
+    --theme-secondary: #e5e5e6;
+    --theme-secondary-foreground: #383a42;
+    --theme-muted: #e5e5e6;
+    --theme-muted-foreground: #a0a1a7;
+    --theme-accent: #a626a4;
+    --theme-accent-foreground: #ffffff;
+    --theme-destructive: #e45649;
+    --theme-success: #50a14f;
+    --theme-success-foreground: #ffffff;
+    --theme-border: #d4d4d4;
+    --theme-input: #e5e5e6;
+    --theme-ring: #4078f2;
+    --theme-chart-1: #4078f2;
+    --theme-chart-2: #50a14f;
+    --theme-chart-3: #a626a4;
+    --theme-chart-4: #c18401;
+    --theme-chart-5: #e45649;
+    --theme-container: #f0f0f0;
+    --theme-backdrop: rgba(0, 0, 0, 0.3);
+    --theme-muted-backdrop: rgba(0, 0, 0, 0.1);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+        font-family:
+            ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+            "Liberation Mono", monospace;
+        font-size: 13px;
+    }
+}
+
+/*
+This is a custom animation for the interactable components.
+It's used to highlight the fields that have been updated.
+You can remove this if you don't want to use it.
+*/
+
+@keyframes flash {
+    0%,
+    100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
+    }
+}
+
+.animate-flash {
+    animation: flash 1s ease-in-out;
+}
+
+/*
+Animated gradient for thinking text, creates a shimmering effect that moves across the text.
+*/
+@keyframes thinking-gradient {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+.animate-thinking-gradient {
+    /* Gradient uses primary color for theme consistency */
+    background: linear-gradient(
+        90deg,
+        var(--color-muted-foreground) 0%,
+        var(--color-primary) 50%,
+        var(--color-muted-foreground) 100%
+    );
+    background-size: 200% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: thinking-gradient 2s linear infinite;
+}
+
+/*
+CodeMirror theme customization for Strudel editor
+Maps Strudel's internal CSS variables to our theme variables
+*/
+.cm-editor {
+    /* Strudel CodeMirror internal CSS variables */
+    --background: var(--color-card) !important;
+    --foreground: var(--color-card-foreground) !important;
+    --caret: var(--color-primary) !important;
+    --selection: color-mix(in oklch, var(--color-primary) 20%, transparent) !important;
+    --selectionMatch: color-mix(in oklch, var(--color-primary) 20%, transparent) !important;
+    --lineHighlight: color-mix(in oklch, var(--color-muted) 50%, transparent) !important;
+    --gutterBackground: transparent !important;
+    --gutterForeground: var(--color-muted-foreground) !important;
+
+    /* Direct style overrides */
+    background-color: var(--color-card) !important;
+    color: var(--color-card-foreground) !important;
+}
+
+.cm-editor .cm-content {
+    caret-color: var(--color-primary) !important;
+}
+
+.cm-editor .cm-cursor {
+    border-left-color: var(--color-primary) !important;
+}
+
+.cm-editor .cm-activeLine {
+    background-color: color-mix(
+        in oklch,
+        var(--color-muted) 50%,
+        transparent
+    ) !important;
+}
+
+.cm-editor .cm-gutters {
+    background-color: transparent !important;
+    border-right: none !important;
+}
+
+.cm-editor .cm-lineNumbers .cm-gutterElement {
+    color: var(--color-muted-foreground) !important;
+    opacity: 0.5;
+}
+
+.cm-editor .cm-selectionBackground,
+.cm-editor.cm-focused .cm-selectionBackground {
+    background-color: color-mix(
+        in oklch,
+        var(--color-primary) 20%,
+        transparent
+    ) !important;
+}
+
+/* Autocomplete dropdown */
+.cm-tooltip-autocomplete {
+    background-color: var(--color-popover) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 0.375rem !important;
+}
+
+.cm-tooltip-autocomplete ul li {
+    color: var(--color-foreground) !important;
+}
+
+.cm-tooltip-autocomplete ul li[aria-selected] {
+    background-color: var(--color-primary) !important;
+    color: var(--color-primary-foreground) !important;
+}
+
+/* Syntax highlighting - uses chart colors for variety */
+.cm-editor .cm-keyword {
+    color: var(--color-primary) !important;
+}
+
+.cm-editor .cm-string {
+    color: var(--color-chart-4) !important;
+}
+
+.cm-editor .cm-number {
+    color: var(--color-chart-2) !important;
+}
+
+.cm-editor .cm-comment {
+    color: var(--color-muted-foreground) !important;
+    font-style: italic;
+}
+
+.cm-editor .cm-variableName {
+    color: var(--color-foreground) !important;
+}
+
+.cm-editor .cm-function {
+    color: var(--color-chart-3) !important;
+}
+
+.cm-editor .cm-operator {
+    color: var(--color-chart-5) !important;
+}
+
+/* Pattern highlighting - Strudel uses this to show active events */
+.cm-editor .cm-strudel-flash {
+    background-color: color-mix(
+        in oklch,
+        var(--color-primary) 30%,
+        transparent
+    ) !important;
+    border-radius: 2px;
+}
+
+/* Tooltips and other popups */
+.cm-tooltip {
+    background-color: var(--color-popover) !important;
+    border: 1px solid var(--color-border) !important;
+    color: var(--color-popover-foreground) !important;
+}
+
+/* Matching brackets */
+.cm-editor .cm-matchingBracket {
+    background-color: color-mix(
+        in oklch,
+        var(--color-accent) 30%,
+        transparent
+    ) !important;
+    outline: 1px solid var(--color-accent) !important;
+}
+
+/* CodeMirror scrollbar styling */
+.cm-editor .cm-scroller::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.cm-editor .cm-scroller::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cm-editor .cm-scroller::-webkit-scrollbar-thumb {
+    background-color: var(--color-border);
+    border-radius: 3px;
+}
+
+.cm-editor .cm-scroller::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-muted-foreground);
+}
+
+.cm-editor .cm-scroller::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* Landing page animations */
+
+/* Visualization canvases: ensure contrast across themes */
+canvas[id*="_widget__scope_"],
+canvas[id*="_widget__pianoroll_"] {
+    background: #0b0f1a;
+    border: 1px solid color-mix(in oklch, white 20%, transparent);
+    border-radius: 8px;
+}
+
+[data-theme="github-light"] canvas[id*="_widget__scope_"],
+[data-theme="solarized-light"] canvas[id*="_widget__scope_"],
+[data-theme="one-light"] canvas[id*="_widget__scope_"],
+[data-theme="github-light"] canvas[id*="_widget__pianoroll_"],
+[data-theme="solarized-light"] canvas[id*="_widget__pianoroll_"],
+[data-theme="one-light"] canvas[id*="_widget__pianoroll_"] {
+    background: #0b0f1a; /* keep dark so the white stroke stays visible */
+    border-color: color-mix(in oklch, black 25%, transparent);
+}
+
+@keyframes landing-float {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.15;
+    }
+    50% {
+        transform: translate(20px, -30px) scale(1.1);
+        opacity: 0.25;
+    }
+}
+
+@keyframes landing-float-reverse {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+        opacity: 0.1;
+    }
+    50% {
+        transform: translate(-30px, 20px) scale(1.15);
+        opacity: 0.2;
+    }
+}
+
+@keyframes landing-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.12;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.18;
+    }
+}
+
+.landing-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    will-change: transform, opacity;
+}
+
+.landing-glow-1 {
+    width: 400px;
+    height: 400px;
+    top: 10%;
+    left: 10%;
+    background: var(--color-primary);
+    animation: landing-float 12s ease-in-out infinite;
+}
+
+.landing-glow-2 {
+    width: 300px;
+    height: 300px;
+    top: 50%;
+    right: 15%;
+    background: var(--color-accent);
+    animation: landing-float-reverse 15s ease-in-out infinite;
+    animation-delay: -3s;
+}
+
+.landing-glow-3 {
+    width: 250px;
+    height: 250px;
+    bottom: 20%;
+    left: 30%;
+    background: var(--color-chart-3);
+    animation: landing-pulse 10s ease-in-out infinite;
+    animation-delay: -5s;
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .landing-glow-1,
+    .landing-glow-2,
+    .landing-glow-3 {
+        animation: none;
+        opacity: 0.15;
+    }
+}
