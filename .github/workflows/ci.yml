@@ -154,10 +154,9 @@ jobs:
           DEMO_BASE_URL: ${{ vars.DEMO_BASE_URL }}
 
   demo-comment:
-    # This Cloudflare deployment pipeline belongs to the upstream CAFE project.
-    if: github.repository == 'Effect-TS/cafe'
+    # This Cloudflare job applies to upstream CAFE pull requests only.
+    if: github.repository == 'Effect-TS/cafe' && github.event_name == 'pull_request'
     # Links the demo and the preview, so it waits for both.
-    if: github.event_name == 'pull_request'
     needs: [deploy, demo]
     runs-on: ubuntu-latest
     permissions:
