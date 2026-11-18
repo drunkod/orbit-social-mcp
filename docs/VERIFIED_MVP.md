@@ -1,5 +1,8 @@
 # What is implemented and verified
 
+> **Historical Orbit-demo notes.** The Tailscale Funnel and no-auth MCP endpoints described here still work, but the live website now serves the **original CAFE chat UI**. See [CAFE MCP integration](CAFE_MCP_INTEGRATION.md) for the current application and screenshots.
+
+
 **Project:** Orbit Social — live customization of a JavaScript social/chat app with Effect, MCP and Tailscale Funnel.
 **Upstream fork:** [Effect-TS/cafe](https://github.com/Effect-TS/cafe).
 **Working ChatGPT connection confirmed by the user:** 18 November 2026.

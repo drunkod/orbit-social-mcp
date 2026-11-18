@@ -1,20 +1,26 @@
-# Orbit Social — CAFE + Effect + MCP live customization
+# CAFE Chat + MCP Plugins
 
-**Working MVP:** a social/chat interface with real MCP Streamable HTTP plugin tools, Effect v4 persistence, runtime JavaScript extensions, live browser updates, and Tailscale Funnel deployment.
+A fork of [Effect-TS/cafe](https://github.com/Effect-TS/cafe) that **keeps the original CAFE chat interface** and adds optional live JavaScript plugins controlled through MCP and Tailscale Funnel.
 
-**Start and connection instructions:** [packages/live-mcp/README.md](packages/live-mcp/README.md)
+![The unchanged CAFE chat screen](docs/assets/cafe-default.png)
 
-- **[Reproduce ChatGPT connection with no OAuth and Tailscale Funnel](docs/CHATGPT_MCP_NOAUTH_TAILSCALE.md)** — full command-by-command runbook, URL mapping and troubleshooting
-- **[Implemented features and verification](docs/VERIFIED_MVP.md)** — live test evidence and screenshots
-- **GitHub:** https://github.com/drunkod/orbit-social-mcp (a fork of Effect-TS/cafe)
+**[Read the CAFE MCP integration guide](docs/CAFE_MCP_INTEGRATION.md)** — implementation details, screenshots, run commands, original chat behavior and testing.
 
-- Live website (on the development Mac): https://tests-macbook-air.tail70b8a.ts.net:10000/
-- No-auth ChatGPT MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
-- Advanced authenticated MCP endpoint: https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin
-- Local repository: ~/Documents/Work/cafe-mcp-live
-- `pnpm dev:mcp` — runs the local application; `pnpm test:mcp` — store tests
+- **Live CAFE chat preview:** https://tests-macbook-air.tail70b8a.ts.net:10000/
+- **Existing public ChatGPT MCP:** https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
+- **Advanced authenticated plugin editing:** https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin
+- **Application source:** packages/frontend/src/main.ts (original Foldkit view), packages/frontend/src/mcp-plugins.ts (new runtime)
+- **Existing MCP service:** packages/live-mcp/server
+- **Tailscale setup:** [working no-auth Funnel runbook](docs/CHATGPT_MCP_NOAUTH_TAILSCALE.md)
 
-The original upstream CAFE source code is preserved as the foundation of this fork. The new standalone on-device demo lives at `packages/live-mcp/`, using Effect v4 and the CAFE chat/event architecture without requiring Cloudflare credentials.
+**Usage:** Enter a room key (lobby by default), select Join chat, type a prompt, and select Leave when finished. Upstream CAFE has **no user accounts**. The local Funnel preview supports shared text chat without Cloudflare credentials. For the original Workers AI assistant replies, deploy the existing CAFE Cloudflare Worker.
+
+~~~bash
+pnpm install --filter @cafe/frontend... --filter @cafe/live-mcp...
+pnpm dev:mcp
+~~~
+
+Nothing is added to the default interface to advertise MCP, and there is no separate redesigned chat application.
 
 ---
 

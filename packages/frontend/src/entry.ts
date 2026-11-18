@@ -1,4 +1,5 @@
 import { Runtime } from 'foldkit'
+import { startMcpPlugins } from './mcp-plugins'
 
 import {
   Message,
@@ -23,4 +24,7 @@ const application = Runtime.makeApplication({
   },
 })
 
+// The Foldkit runtime is long-lived; initialize optional plugin observers first.
+// This has no visible effect when VITE_MCP_PLUGINS_URL is not configured.
+startMcpPlugins(import.meta.env.VITE_MCP_PLUGINS_URL)
 Runtime.run(application)

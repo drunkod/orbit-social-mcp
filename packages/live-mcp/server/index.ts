@@ -5,12 +5,15 @@ import path from 'node:path'
 import { Effect } from 'effect'
 import { DemoStore } from './store.js'
 import { handleMcp } from './mcp.js'
+import { CafePreviewRooms } from './cafe-preview-rooms.js'
 
 const port = Number(process.env.PORT ?? '8787')
 const root = process.cwd()
-const dist = path.resolve(root, 'dist')
+const dist = path.resolve(root, '../frontend/dist')
 const store = new DemoStore()
 await store.initialize()
+const cafeRooms = new CafePreviewRooms()
+await cafeRooms.initialize()
 
 async function getToken(): Promise<string> {
   if (process.env.MCP_DEMO_TOKEN?.trim()) return process.env.MCP_DEMO_TOKEN.trim()
@@ -49,7 +52,7 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
     const route = url.pathname
 
-    if (route === '/health') return json(res, 200, { ok: true, name: 'orbit-mcp', revision: store.publicState().revision })
+    if (route === '/health') return json(res, 200, { ok: true, name: 'cafe-mcp', revision: store.publicState().revision })
     if (route === '/mcp') {
       return await handleMcp(req, res, store, 'public')
     }
@@ -62,6 +65,32 @@ const server = createServer(async (req, res) => {
         return res.end(JSON.stringify({ error: 'Admin MCP requires bearer token' }))
       }
       return await handleMcp(req, res, store, 'admin')
+    }
+
+    // Preview-only adapter for the original CAFE join/send chat UI. The production
+    // CAFE Cloudflare Worker and Foldkit chat logic are unchanged.
+    const cafeEvents = /^\/chats\/([^/]+)\/events$/.exec(route)
+    if (cafeEvents && req.method === 'GET') {
+      const key = decodeURIComponent(cafeEvents[1]!)
+      if (!key.trim() || key.length > 80) return json(res, 400, { error: 'Invalid chat room' })
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      })
+      cafeRooms.subscribe(key, res)
+      return
+    }
+    const cafePrompts = /^\/chats\/([^/]+)\/prompts$/.exec(route)
+    if (cafePrompts && req.method === 'POST') {
+      const key = decodeURIComponent(cafePrompts[1]!)
+      const payload = await readJson(req)
+      const text = typeof payload.text === 'string' ? payload.text : ''
+      if (!key.trim() || key.length > 80 || !text.trim() || text.length > 2000)
+        return json(res, 400, { error: 'Invalid chat key or text' })
+      const posted = await cafeRooms.post(key, text)
+      return json(res, 200, posted)
     }
 
     if (route === '/api/state' && req.method === 'GET') return json(res, 200, store.publicState())
@@ -128,7 +157,7 @@ const server = createServer(async (req, res) => {
 })
 
 server.listen(port, '127.0.0.1', () => {
-  console.log('Orbit Social running at http://127.0.0.1:' + port)
+  console.log('CAFE Chat + MCP plugins at http://127.0.0.1:' + port)
   console.log('MCP endpoint: http://127.0.0.1:' + port + '/mcp')
   console.log('Token file: ' + path.resolve(root, 'data/.mcp-token'))
   console.log('Connect via Tailscale Funnel on dedicated HTTPS port 10000')

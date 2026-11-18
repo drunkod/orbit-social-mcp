@@ -29,15 +29,16 @@ import { Button, Input } from '@foldkit/ui'
 import { Api } from '@cafe/api'
 import { ChatEvent } from '@cafe/api/chat/event'
 import { ChatMessage } from '@cafe/api/chat/message'
-import { type RoomClient, connect } from '@cafe/api/room/connect'
+import { connect } from '@cafe/api/room/connect'
+import { type ChatRoomConnection, connectPreviewRoom } from './preview-room'
 
-const API_URL = import.meta.env.VITE_API_URL
+const API_URL = import.meta.env.VITE_API_URL || globalThis.location?.origin || ''
 const CONNECTION_TIMEOUT_MS = 5000
 
 // MODEL
 
 const ChatConnection =
-  ManagedResource.tag<RoomClient>()('ChatConnection')
+  ManagedResource.tag<ChatRoomConnection>()('ChatConnection')
 type ChatConnectionService = ManagedResource.ServiceOf<typeof ChatConnection>
 
 export const ConnectionState = defineTaggedUnion({
@@ -260,12 +261,19 @@ export const managedResources = ManagedResource.make<Model, Message>()(
       // The client's socket closes with the acquire Scope. A ping confirms
       // the Room is reachable before the chat counts as connected.
       acquire: chatKey =>
-        connect(API_URL, chatKey).pipe(
+        (import.meta.env.VITE_CAFE_PREVIEW === 'true'
+          ? connectPreviewRoom(API_URL, chatKey)
+          : connect(API_URL, chatKey).pipe(
+              Effect.map((room): ChatRoomConnection => ({
+                ping: () => room.ping(),
+                events: () => room.events(),
+              })),
+            )).pipe(
           Effect.provide(Socket.layerWebSocketConstructorGlobal),
           Effect.tap(client => client.ping()),
           Effect.timeout(Duration.millis(CONNECTION_TIMEOUT_MS)),
           Effect.mapError(error =>
-            error._tag === 'TimeoutError'
+            error !== null && typeof error === 'object' && '_tag' in error && error._tag === 'TimeoutError'
               ? new Error('Connection timeout')
               : new Error('Failed to connect to the chat'),
           ),
@@ -284,7 +292,7 @@ export const managedResources = ManagedResource.make<Model, Message>()(
 // SUBSCRIPTION
 
 /** The Room's events until the stream ends (Disconnected) or fails. */
-const streamChatEvents = (client: RoomClient) =>
+const streamChatEvents = (client: ChatRoomConnection) =>
   client.events().pipe(
     Stream.map(event => Message.ReceivedChatEvent({ event })),
     Stream.concat(Stream.make(Message.Disconnected())),
@@ -329,6 +337,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => ({
       h.Class(
         'min-h-screen bg-stone-100 flex flex-col items-center justify-center p-6',
       ),
+      h.DataAttribute('mcp-app', 'true'),
     ],
     [
       h.div(
@@ -336,6 +345,7 @@ export const view = (model: Model, h: HtmlBuilder<Message>): Document => ({
           h.Class(
             'bg-white rounded-xl shadow-xl w-full max-w-2xl flex flex-col h-[600px]',
           ),
+          h.DataAttribute('mcp-panel', 'true'),
         ],
         [
           headerView(model.connection, h),
@@ -363,14 +373,14 @@ const headerView = (
   h: HtmlBuilder<Message>,
 ): Html =>
   h.div(
-    [h.Class('p-6 border-b border-stone-200 flex items-center justify-between')],
+    [h.Class('p-6 border-b border-stone-200 flex items-center justify-between'), h.DataAttribute('mcp-header', 'true')],
     [
       h.div(
         [],
         [
-          h.div([h.Class('text-2xl font-bold text-stone-800')], ['Cafe Chat']),
+          h.div([h.Class('text-2xl font-bold text-stone-800'), h.DataAttribute('mcp-title', 'true')], ['Cafe Chat']),
           h.div(
-            [h.Class('text-sm text-stone-500 mt-1')],
+            [h.Class('text-sm text-stone-500 mt-1'), h.DataAttribute('mcp-subtitle', 'true')],
             [
               ConnectionState.match(connection, {
                 Disconnected: () => 'Pick a chat key to join',
@@ -501,6 +511,7 @@ const messageView = (chatMessage: ChatMessage, h: HtmlBuilder<Message>): Html =>
     chatMessage.id,
     [
       h.DataAttribute('role', chatMessage.role),
+      h.DataAttribute('mcp-message', 'true'),
       h.Class(
         chatMessage.role === 'user'
           ? 'flex flex-col items-end'
@@ -515,6 +526,7 @@ const messageView = (chatMessage: ChatMessage, h: HtmlBuilder<Message>): Html =>
               ? 'bg-amber-100 text-stone-800 rounded-lg px-4 py-2 max-w-md break-words whitespace-pre-wrap'
               : 'bg-stone-200 text-stone-800 rounded-lg px-4 py-2 max-w-md break-words whitespace-pre-wrap',
           ),
+          h.DataAttribute('mcp-bubble', 'true'),
         ],
         [chatMessage.text],
       ),

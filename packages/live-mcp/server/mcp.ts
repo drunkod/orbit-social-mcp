@@ -30,7 +30,7 @@ function registerAdminTools(server: McpServer, store: DemoStore) {
   server.registerTool('app_overview', {
     description: 'Get app state, plugin interface and instructions for writing hot-reloadable UI plugins.',
     inputSchema: {}
-  }, async () => success({ app: 'Orbit Social / CAFE Effect MVP', state: store.publicState(), pluginGuide: PLUGIN_GUIDE }))
+  }, async () => success({ app: 'CAFE Chat + MCP plugin runtime', state: store.publicState(), pluginGuide: PLUGIN_GUIDE }))
 
   server.registerTool('list_plugins', {
     description: 'List installed JavaScript UI plugins and their enable/disable state.',
@@ -114,11 +114,11 @@ function registerAdminTools(server: McpServer, store: DemoStore) {
 
 function registerPublicTools(server: McpServer, store: DemoStore) {
   server.registerTool('get_app_info', {
-    description: 'Inspect the Orbit Social demo, current interface, and safe customization options. No authorization required.',
+    description: 'Inspect the CAFE Chat demo, current interface, and safe customization options. No authorization required.',
     inputSchema: {},
     annotations: { readOnlyHint: true }
   }, async () => success({
-    app: 'Orbit Social',
+    app: 'CAFE Chat',
     purpose: 'Live MCP-driven visual customization of a demo social chat app',
     availableThemes: ['default', 'aurora', 'focus'],
     activePlugins: store.publicState().plugins.filter(p => p.enabled).map(p => ({ id: p.id, name: p.name })),
@@ -128,7 +128,7 @@ function registerPublicTools(server: McpServer, store: DemoStore) {
   }))
 
   server.registerTool('list_demo_themes', {
-    description: 'List safe preset visual plugins that can be toggled live in Orbit Social.',
+    description: 'List safe preset visual plugins that can be toggled live in CAFE Chat.',
     inputSchema: {},
     annotations: { readOnlyHint: true }
   }, async () => success([
@@ -138,7 +138,7 @@ function registerPublicTools(server: McpServer, store: DemoStore) {
   ]))
 
   server.registerTool('set_demo_theme', {
-    description: 'Switch a built-in visual plugin. Changes appear immediately in connected Orbit Social browser tabs.',
+    description: 'Switch a built-in visual plugin. Changes appear immediately in connected CAFE Chat browser tabs.',
     inputSchema: { theme: z.enum(['default', 'aurora', 'focus']) },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true }
   }, async ({ theme }) => {
@@ -152,7 +152,7 @@ function registerPublicTools(server: McpServer, store: DemoStore) {
   })
 
   server.registerTool('customize_interface', {
-    description: 'Create or update a safe visual plugin to customize the running Orbit Social interface: accent color, header, tagline, icon and sidebar widget. No raw code accepted. Refresh not needed.',
+    description: 'Create or update a safe visual plugin to customize the running CAFE Chat interface: accent color, header, tagline, icon and sidebar widget. No raw code accepted. Refresh not needed.',
     inputSchema: {
       accent: z.string().regex(/^#[a-fA-F0-9]{6}$/).describe('A six-digit hex color, for example #f97316'),
       title: z.string().trim().min(1).max(90).describe('A new welcome banner headline'),
@@ -204,7 +204,7 @@ function registerPublicTools(server: McpServer, store: DemoStore) {
 
 export async function handleMcp(req: IncomingMessage, res: ServerResponse, store: DemoStore, mode: 'public' | 'admin' = 'public') {
 
-  const server = new McpServer({ name: 'orbit-live-customization', version: '0.1.0' })
+  const server = new McpServer({ name: 'cafe-mcp-customization', version: '0.1.0' })
   if (mode === 'admin') registerAdminTools(server, store)
   else registerPublicTools(server, store)
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })

@@ -1,4 +1,4 @@
-name: Orbit MCP — Typecheck, Build, Test
+name: CAFE MCP — Original UI and Live Plugins
 
 on:
   push:
@@ -22,10 +22,12 @@ jobs:
           node-version: 26
           cache: pnpm
       - name: Install Orbit dependencies
-        run: pnpm install --filter @cafe/live-mcp... --frozen-lockfile
+        run: pnpm install --filter @cafe/live-mcp... --filter @cafe/frontend... --frozen-lockfile
       - name: Typecheck
         run: pnpm --filter @cafe/live-mcp typecheck
       - name: Build browser UI
         run: pnpm --filter @cafe/live-mcp build
       - name: Run unit tests
         run: pnpm --filter @cafe/live-mcp test
+      - name: Check original CAFE Story and Scene tests
+        run: pnpm --filter @cafe/frontend test

@@ -1,5 +1,8 @@
 # ChatGPT MCP without OAuth — Tailscale Funnel runbook
 
+> **Historical Orbit-demo notes.** The Tailscale Funnel and no-auth MCP endpoints described here still work, but the live website now serves the **original CAFE chat UI**. See [CAFE MCP integration](CAFE_MCP_INTEGRATION.md) for the current application and screenshots.
+
+
 **Verified:** 18 November 2026, on the authorized development Mac running Tailscale 1.102.3.
 **Foundation:** [Effect-TS/cafe](https://github.com/Effect-TS/cafe).
 **Implementation:** [packages/live-mcp](../packages/live-mcp).

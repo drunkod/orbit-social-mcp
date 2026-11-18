@@ -5,11 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm build && tsx server/index.ts",
-    "build": "vite build",
+    "build": "VITE_CAFE_PREVIEW=true VITE_MCP_PLUGINS_URL=/ pnpm --filter @cafe/frontend build",
     "start": "tsx server/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:visual": "tsx scripts/visual-check.ts"
+    "test:visual": "tsx scripts/test-cafe-plugins.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
