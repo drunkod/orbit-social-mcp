@@ -81,6 +81,14 @@ ChatGPT calls music_list_sounds (optional) then music_compose with a typed param
 
 The generated Strudel source is displayed in the Studio and changes instantly on the next MCP call. Changing the tempo/volume sliders updates both code and the audio engine. The browser sends validation feedback; music_get_state reveals confirmed playing/error state. Browser autoplay restrictions mean **remote MCP cannot make a brand-new browser tab audible until its audio context is first activated by a user gesture**.
 
+## Live editor parity: note highlights and MCP source synchronization
+
+The original StrudelMirror editor gets playable mini-notation source ranges from its transpiler in `afterEval`; its drawer calls `highlightMiniLocations` each animation frame, and CodeMirror decorates tokens at the times their notes are actually sounding. The Music Studio now explicitly enables the upstream `isPatternHighlightingEnabled` extension when attached, even if the user's stale persisted editor setting disabled it. **Highlights are expected during playback only**, not while stopped.
+
+Previously a stopped MCP revision was shown in the **right-hand server-state panel** but never sent into the editable CodeMirror document. `Studio.apply()` returned on `playing:false` before calling `setCode`, exactly matching the mismatch shown in the user screenshots. That branch now updates the actual editor before stopping. Additionally, editor source is buffered before attachment, and the Studio avoids the extra hidden-editor initialization that can race the visible editor. The original `/music/chat` route retains its upstream hidden initialization because it gates rendering on `strudelIsReady`. A visible `Editor synchronized with MCP source` status checks the actual Strudel provider state against the server revision.
+
+In the test-first browser regression, a fresh Studio opening on a **stopped MCP composition** originally timed out looking for the generated melody in `.cm-content` (red). The updated test now checks that the editable CodeMirror document is correct before audio activation, that a subsequent live MCP program appears there, and that **native inline CodeMirror outline decorations actually appear on sounding notes** during piano playback. The same Playwright job also covers the original CAFE chat and plugin behavior.
+
 ## Why the original StrudelLM demo sounded more melodic
 
 CodeGraph index and `codegraph context`/`codegraph impact compileMusic` traced the real path from `music_compose` to `compileMusic` to `MusicStore` and `StrudelService.updateAndPlay`, with `prebake` resolving piano samples. The first MCP bridge **did not** compile the stock StrudelLM example: it used a low-frequency sine-wave bass, fixed TR-909 bank, and smaller track gains in place of the original sampled acoustic piano. The StrudelLM playback engine itself was not replaced or modified.

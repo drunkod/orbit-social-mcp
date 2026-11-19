@@ -69,7 +69,11 @@ function Studio() {
     lastApplied.current = next.revision;
     const service = StrudelService.instance();
     if (!next.playing) {
+      // The editor must always display the latest MCP source, even when paused.
+      // Previously this branch returned before setCode(), so the editor showed
+      // the welcome example while the right-hand panel displayed new music.
       service.stop();
+      if (next.code && service.getCode() !== next.code) service.setCode(next.code);
       setStatus("Stopped remotely");
       void feedback(next.revision, "stopped");
       return;
@@ -256,6 +260,13 @@ function Studio() {
               <h2 className="text-sm font-semibold">Generated Strudel program</h2>
               <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-words max-h-56 overflow-auto bg-muted/40 rounded-xl p-3">{visibleCode}</pre>
               <p className="text-xs text-muted-foreground">Revision {remote?.revision ?? "—"} · {remote?.feedback?.status || "awaiting browser validation"}</p>
+              {remote?.code && (
+                <p className="text-xs" data-testid="editor-sync-status">
+                  {isReady && code === remote.code
+                    ? "Editor synchronized with MCP source"
+                    : "Applying MCP source to editor…"}
+                </p>
+              )}
               {remote?.feedback?.message && <p className="text-xs text-red-500 break-words">{remote.feedback.message}</p>}
             </div>
           </aside>
@@ -269,7 +280,7 @@ function Studio() {
 export default function McpMusicStudioPage() {
   return (
     <LoadingContextProvider>
-      <StrudelProvider>
+      <StrudelProvider initializeHiddenEditor={false}>
         <Studio />
       </StrudelProvider>
     </LoadingContextProvider>

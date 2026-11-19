@@ -257,7 +257,13 @@ export class StrudelService {
    * Set code in the editor
    */
   setCode(code: string): void {
-    if (this.editorInstance) {
+    // Retain code supplied by MCP even if the real editor has not attached.
+    // attach() consumes _state.code when it creates the visible CodeMirror.
+    if (!this.editorInstance) {
+      this.notifyStateChange({ code });
+      return;
+    }
+    if (this.editorInstance.editor.state.doc.toString() !== code) {
       this.editorInstance.setCode(code);
     }
   }
@@ -642,6 +648,12 @@ const keybindings = getKeybindings();
 
       if (typeof this.editorInstance.changeSetting === "function") {
         this.editorInstance.changeSetting("keybindings", resolvedKeybindings);
+        // Use Strudel's native MIDI-event/mini-notation location decorations:
+        // the drawer highlights *the currently sounding tokens* each frame.
+        // A stale persisted CodeMirror preference must not disable this in Studio.
+        if (window.location.pathname.endsWith("/studio")) {
+          this.editorInstance.changeSetting("isPatternHighlightingEnabled", true);
+        }
       }
       await this.prebake();
 
@@ -651,7 +663,11 @@ const keybindings = getKeybindings();
 
       // Sync the REPL's internal state with the editor's actual code
       // This is necessary because StrudelMirror doesn't sync initialCode to repl.state
-      this.editorInstance.repl.setCode(currentCode);
+      const latestCode = this._state.code || currentCode;
+      if (this.editorInstance.editor.state.doc.toString() !== latestCode) {
+        this.editorInstance.setCode(latestCode);
+      }
+      this.editorInstance.repl.setCode(latestCode);
 
       // Code loading is now handled by StrudelStorageSync component
 

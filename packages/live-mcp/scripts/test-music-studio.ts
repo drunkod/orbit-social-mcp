@@ -32,9 +32,23 @@ page.on('pageerror', error => errors.push(error.message))
 const client = new Client({ name: 'strudellm-e2e', version: '0.1.0' })
 try {
   await client.connect(new StreamableHTTPClientTransport(new URL(mcpUrl)))
+  // Regression: a stopped composition must still populate the real CodeMirror
+  // editor when a fresh user visits the Studio. Previously only the right-hand
+  // server-state panel updated, and the editor showed the welcome example.
+  const stoppedDraft = await client.callTool({ name: 'music_compose', arguments: {
+    title: 'Stopped MCP source sync ' + Date.now(), bpm: 116,
+    drums: 'bd ~ sd ~', melody: 'f4 a4 c5', instrument: 'piano'
+  } })
+  assert.equal(Boolean(stoppedDraft.isError), false)
+  await client.callTool({ name: 'music_stop', arguments: {} })
   await page.goto(base + '/music/studio', { waitUntil: 'domcontentloaded', timeout: 90000 })
   await page.getByText('Live code editor & player').waitFor({ timeout: 90000 })
   await page.getByRole('button', { name: 'Enable Audio' }).waitFor()
+  await page.waitForFunction(() => document.querySelector('.cm-content')?.textContent?.includes('f4 a4 c5'),
+    undefined, { timeout: 15000 })
+  assert.match(await page.locator('.cm-content').textContent() ?? '', /note\("f4 a4 c5"\)/,
+    'Stopped MCP source must appear in the actual editable CodeMirror editor')
+  await page.getByTestId('editor-sync-status').getByText('Editor synchronized with MCP source').waitFor({ timeout: 15000 })
   const title = 'Original MCP house groove ' + Date.now()
   const result = await client.callTool({
     name: 'music_compose',
@@ -89,6 +103,9 @@ try {
   assert.match(demoCode.code, /\._scope\(\{ height: 80 \}\)/)
   assert.match(demoCode.code, /\._pianoroll\(\{ fold: 1 \}\)/)
   await page.getByRole('heading', { name: 'Original StrudelLM Piano + Drums' }).waitFor({ timeout: 30000 })
+  await page.waitForFunction(() => document.querySelector('.cm-content')?.textContent?.includes('c3 e3 g3 b3'),
+    undefined, { timeout: 15000 })
+  await page.getByTestId('editor-sync-status').getByText('Editor synchronized with MCP source').waitFor({ timeout: 15000 })
   let demoPlaying = false
   let lastPianoStatus = "not-received"
   for (let attempt = 0; attempt < 60; attempt++) {
@@ -105,6 +122,13 @@ try {
     }
     await page.waitForTimeout(1000)
   }
+  // The original StrudelMirror maps currently audible haps to source ranges:
+  // test REAL code decorations, not a synthetic playback animation.
+  await page.waitForFunction(() => Array.from(document.querySelectorAll('.cm-content [style]'))
+      .some(node => (node.getAttribute('style') ?? '').includes('outline')),
+    undefined, { timeout: 16000 }).catch(() => {
+      throw new Error('Missing native Strudel event-location highlight decorations during piano playback')
+    })
   assert.ok(demoPlaying, 'Exact original piano demo must play after MCP update. Last state: ' + lastPianoStatus +
     '; piano HTTP: ' + JSON.stringify(sampleResponses.filter(v => v.url.includes('/piano'))) +
     '; request failures: ' + JSON.stringify(failedRequests.slice(-12)) + '; JS: ' + JSON.stringify(errors.slice(-5)))

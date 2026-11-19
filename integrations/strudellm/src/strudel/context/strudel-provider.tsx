@@ -30,7 +30,13 @@ export const StrudelContext = React.createContext<StrudelContextValue | null>(
 
 const strudelService = StrudelService.instance();
 
-export function StrudelProvider({ children }: { children: React.ReactNode }) {
+export function StrudelProvider({
+  children,
+  initializeHiddenEditor = true,
+}: {
+  children: React.ReactNode;
+  initializeHiddenEditor?: boolean;
+}) {
   const { setMessage, setProgress, setState } = useLoadingContext();
   const [replState, setReplState] = React.useState<StrudelReplState | null>(
     () => {
@@ -81,16 +87,18 @@ export function StrudelProvider({ children }: { children: React.ReactNode }) {
       });
     });
 
-    if (!strudelService.isReady) {
-      strudelService.init();
-      return;
+    // The upstream /chat route hides StrudelRepl behind a loading screen and
+    // needs a temporary editor to initialize the engine. The MCP Studio renders
+    // StrudelRepl immediately and opts out: creating both editors races attach
+    // and may reset the latest MCP source to DEFAULT_CODE.
+    if (initializeHiddenEditor && !strudelService.isReady) {
+      void strudelService.init().catch((error) => console.error("Strudel init failed", error));
     }
-
     return () => {
       loadingUnsubscribe();
       replUnsubscribe();
     };
-  }, [setMessage, setProgress, setReplState, setState]);
+  }, [initializeHiddenEditor, setMessage, setProgress, setReplState, setState]);
 
   const setRoot = React.useCallback((el: HTMLDivElement) => {
     strudelService.attach(el);
