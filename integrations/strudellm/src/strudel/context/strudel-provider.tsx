@@ -1,0 +1,189 @@
+"use client";
+
+import { useLoadingContext } from "@/components/loading/context";
+import { StrudelService } from "@/strudel/lib/service";
+import { StrudelReplState } from "@strudel/codemirror";
+import * as React from "react";
+
+type StrudelContextValue = {
+  code: string;
+  error: string | Error | null;
+  missingSample: string | null;
+  revertNotification: { id: number; message: string } | null;
+  clearRevertNotification: () => void;
+  setCode: (code: string, shouldPlay?: boolean) => void;
+  isPlaying: boolean;
+  hasUnevaluatedChanges: boolean;
+  play: () => void;
+  stop: () => void;
+  reset: () => void;
+  clearError: () => void;
+  setRoot: (el: HTMLDivElement) => void;
+  isReady: boolean;
+  isAiUpdating: boolean;
+  setIsAiUpdating: (value: boolean) => void;
+};
+
+export const StrudelContext = React.createContext<StrudelContextValue | null>(
+  null,
+);
+
+const strudelService = StrudelService.instance();
+
+export function StrudelProvider({
+  children,
+  initializeHiddenEditor = true,
+}: {
+  children: React.ReactNode;
+  initializeHiddenEditor?: boolean;
+}) {
+  const { setMessage, setProgress, setState } = useLoadingContext();
+  const [replState, setReplState] = React.useState<StrudelReplState | null>(
+    () => {
+      return strudelService.getReplState();
+    },
+  );
+  const [isAiUpdating, setIsAiUpdating] = React.useState(false);
+  const isAiUpdatingRef = React.useRef(isAiUpdating);
+  React.useEffect(() => {
+    isAiUpdatingRef.current = isAiUpdating;
+  }, [isAiUpdating]);
+
+  React.useEffect(() => {
+    const loadingUnsubscribe = strudelService.onLoadingProgress(
+      (status: string, progress: number) => {
+        setProgress(progress);
+        setMessage(status || "Loading...");
+
+        if (progress >= 100) {
+          setState("ready");
+        }
+      },
+    );
+
+    const replUnsubscribe = strudelService.onStateChange((newState) => {
+      setReplState((prevState) => {
+        const nextState: StrudelReplState = {
+          ...(prevState ?? {}),
+          ...newState,
+        } as StrudelReplState;
+
+        // Check if a new error appeared while playing (user-caused error, not AI)
+        // Only stop if: was playing, no previous error, now has error, not AI updating
+        const wasPlaying = prevState?.started === true;
+        const hadNoError = !prevState?.evalError && !prevState?.schedulerError;
+        const hasError = !!(nextState.evalError || nextState.schedulerError);
+        const isUserError = !isAiUpdatingRef.current;
+
+        if (wasPlaying && hadNoError && hasError && isUserError) {
+          // User caused an error while playing - stop playback
+          strudelService.stop();
+        }
+
+        return {
+          ...nextState,
+          missingSample: nextState.missingSample ?? null,
+        };
+      });
+    });
+
+    // The upstream /chat route hides StrudelRepl behind a loading screen and
+    // needs a temporary editor to initialize the engine. The MCP Studio renders
+    // StrudelRepl immediately and opts out: creating both editors races attach
+    // and may reset the latest MCP source to DEFAULT_CODE.
+    if (initializeHiddenEditor && !strudelService.isReady) {
+      void strudelService.init().catch((error) => console.error("Strudel init failed", error));
+    }
+    return () => {
+      loadingUnsubscribe();
+      replUnsubscribe();
+    };
+  }, [initializeHiddenEditor, setMessage, setProgress, setReplState, setState]);
+
+  const setRoot = React.useCallback((el: HTMLDivElement) => {
+    strudelService.attach(el);
+
+    return () => {
+      strudelService.detach();
+    };
+  }, []);
+
+  const setCode = React.useCallback(
+    (code: string, shouldPlay: boolean = false) => {
+      strudelService.setCode(code);
+      if (shouldPlay) {
+        strudelService.play().catch((error) => {
+          console.warn("[StrudelProvider] Play error caught:", error);
+        });
+      }
+    },
+    [],
+  );
+
+  const clearRevertNotification = React.useCallback(() => {
+    strudelService.clearRevertNotification();
+  }, []);
+
+  const providerValue: StrudelContextValue = React.useMemo(() => {
+    const {
+      started: isPlaying,
+      code,
+      activeCode,
+      evalError,
+      schedulerError,
+      missingSample,
+      revertNotification,
+    } = replState || { started: false, code: "", activeCode: "" };
+    // Has unevaluated changes if playing and current code differs from what's being played
+    const hasUnevaluatedChanges = isPlaying && code !== activeCode;
+    return {
+      code,
+      error: evalError || schedulerError || null,
+      missingSample: missingSample ?? null,
+      revertNotification: revertNotification ?? null,
+      clearRevertNotification,
+      isPlaying,
+      hasUnevaluatedChanges,
+      setCode,
+      play: async () => {
+        try {
+          await strudelService.play();
+        } catch (error) {
+          // Error is already captured by the service's error handling
+          // This catch prevents unhandled rejection warnings
+          console.warn("[StrudelProvider] Play error caught:", error);
+        }
+      },
+      stop: strudelService.stop,
+      reset: strudelService.reset,
+      clearError: strudelService.clearError,
+      setRoot,
+      isReady: strudelService.isReady,
+      isAiUpdating,
+      setIsAiUpdating,
+    };
+  }, [
+    setRoot,
+    setCode,
+    replState,
+    isAiUpdating,
+    clearRevertNotification,
+  ]);
+
+  return (
+    <StrudelContext.Provider value={providerValue}>
+      {children}
+    </StrudelContext.Provider>
+  );
+}
+
+export function useStrudel() {
+  // Hook implementation
+  const context = React.useContext(StrudelContext);
+
+  if (!context) {
+    throw new Error("useStrudel must be used within a StrudelProvider");
+  }
+
+  return context;
+}

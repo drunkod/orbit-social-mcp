@@ -8,6 +8,15 @@ A fork of [Effect-TS/cafe](https://github.com/Effect-TS/cafe) that **keeps the o
 
 **[Research: 48 approaches to live UI customization and MCP-generated interfaces](docs/LIVE_UI_MCP_METHODS_RESEARCH.md)** — comparison tables, existing GitHub projects, broadcast overlay examples, advantages/disadvantages, and technical selection guide.
 
+**[StrudelLM × MCP Generative Music Studio](docs/STRUDELLM_MCP_PORT_README.md)** — complete upstream StrudelLM source retained, music composition via ChatGPT MCP, code-driven sound engine and live tempo/volume controls; new PR CI records a browser demo following CAFE `AGENTS.md`. [Port plan](docs/STRUDELLM_MCP_PORT_PLAN.md).
+
+![StrudelLM MCP Music Studio screenshot](docs/assets/strudellm-mcp-studio.png)
+
+- **Live Music Studio:** https://tests-macbook-air.tail70b8a.ts.net:10000/music/studio
+- **Public MCP music tools:** same existing ChatGPT connector, `music_compose`, `music_get_state`, `music_list_sounds`, `music_set_controls`, `music_stop`, `music_play`.
+- **Original StrudelLM app source and workflow:** `integrations/strudellm` (independent Next.js/React + npm; AGPL-3.0; original Tambo chat requires its API key).
+- **Local combined development:** `pnpm dev:music` (Node 24 for StrudelLM; normal CAFE node runtime preserved).
+
 - **Live CAFE chat preview:** https://tests-macbook-air.tail70b8a.ts.net:10000/
 - **Existing public ChatGPT MCP:** https://tests-macbook-air.tail70b8a.ts.net/orbit-mcp
 - **Advanced authenticated plugin editing:** https://tests-macbook-air.tail70b8a.ts.net:10000/mcp-admin

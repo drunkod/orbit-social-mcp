@@ -1,19 +1,25 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer, request as proxyRequest, type IncomingMessage, type ServerResponse } from 'node:http'
 import { randomBytes } from 'node:crypto'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { Effect } from 'effect'
+import * as Config from 'effect/Config'
 import { DemoStore } from './store.js'
 import { handleMcp } from './mcp.js'
 import { CafePreviewRooms } from './cafe-preview-rooms.js'
+import { MusicStore } from './music-store.js'
 
 const port = Number(process.env.PORT ?? '8787')
+// CAFE AGENTS.md: application configuration is parsed through Effect Config.
+const strudelPort = Effect.runSync(Config.Number('STRUDELLM_PORT').pipe(Config.withDefault(3105)))
 const root = process.cwd()
 const dist = path.resolve(root, '../frontend/dist')
 const store = new DemoStore()
 await store.initialize()
 const cafeRooms = new CafePreviewRooms()
 await cafeRooms.initialize()
+const music = new MusicStore()
+await music.initialize()
 
 async function getToken(): Promise<string> {
   if (process.env.MCP_DEMO_TOKEN?.trim()) return process.env.MCP_DEMO_TOKEN.trim()
@@ -54,7 +60,7 @@ const server = createServer(async (req, res) => {
 
     if (route === '/health') return json(res, 200, { ok: true, name: 'cafe-mcp', revision: store.publicState().revision })
     if (route === '/mcp') {
-      return await handleMcp(req, res, store, 'public')
+      return await handleMcp(req, res, store, music, 'public')
     }
     if (route === '/mcp-admin') {
       if (req.headers.authorization !== 'Bearer ' + mcpToken) {
@@ -64,7 +70,69 @@ const server = createServer(async (req, res) => {
         })
         return res.end(JSON.stringify({ error: 'Admin MCP requires bearer token' }))
       }
-      return await handleMcp(req, res, store, 'admin')
+      return await handleMcp(req, res, store, music, 'admin')
+    }
+
+    // Original StrudelLM remains an independently runnable Next.js application.
+    // This proxy puts it behind the SAME Tailscale Funnel hostname as CAFE/MCP.
+    if (route === '/music' || route.startsWith('/music/')) {
+      const nextPort = strudelPort
+      const proxied = proxyRequest({
+        hostname: '127.0.0.1', port: nextPort, path: req.url ?? '/music',
+        method: req.method, headers: { ...req.headers, host: '127.0.0.1:' + nextPort }
+      }, upstream => {
+        res.writeHead(upstream.statusCode ?? 502, upstream.headers)
+        upstream.pipe(res)
+      })
+      proxied.on('error', () => {
+        if (!res.headersSent) return json(res, 502, {
+          error: 'StrudelLM is not running. From integrations/strudellm run npm run dev or npm run start.',
+          app: '/music/studio'
+        })
+        res.end()
+      })
+      req.pipe(proxied)
+      return
+    }
+
+    if (route === '/music-sync/state' && req.method === 'GET') {
+      return json(res, 200, music.publicState())
+    }
+    if (route === '/music-sync/events' && req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no'
+      })
+      res.write('retry: 1200\n\n')
+      const notify = () => res.write('event: change\ndata: ' + JSON.stringify({ revision: music.publicState().revision }) + '\n\n')
+      const unsub = music.subscribe(notify)
+      const keepAlive = setInterval(() => { if (!res.destroyed) res.write(': heartbeat\n\n') }, 20000)
+      res.on('close', () => { unsub(); clearInterval(keepAlive) })
+      return
+    }
+    if (route === '/music-sync/feedback' && req.method === 'POST') {
+      const body = await readJson(req)
+      const status = body.status
+      if (typeof body.revision !== 'number' ||
+          !['playing', 'stopped', 'error', 'needs-gesture'].includes(String(status)))
+        return json(res, 400, { error: 'Invalid music feedback' })
+      const accepted = await music.reportFeedback({
+        revision: body.revision,
+        status: status as 'playing' | 'stopped' | 'error' | 'needs-gesture',
+        ...(typeof body.message === 'string' ? { message: body.message } : {})
+      })
+      return json(res, accepted ? 200 : 409, { ok: accepted })
+    }
+    if (route === '/music-sync/controls' && req.method === 'POST') {
+      try { return json(res, 200, await music.changeControls(await readJson(req))) }
+      catch (error) { return json(res, 400, { error: error instanceof Error ? error.message : String(error) }) }
+    }
+    if (route === '/music-sync/stop' && req.method === 'POST') {
+      return json(res, 200, await music.setPlaying(false))
+    }
+    if (route === '/music-sync/play' && req.method === 'POST') {
+      return json(res, 200, await music.setPlaying(true))
     }
 
     // Preview-only adapter for the original CAFE join/send chat UI. The production

@@ -3,6 +3,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { z } from 'zod'
 import type { DemoStore } from './store.js'
+import type { MusicStore } from './music-store.js'
+import { registerMusicAdminTools, registerMusicPublicTools } from './music-tools.js'
 
 export const PLUGIN_GUIDE = [
   'Plugins are browser-executed JavaScript ESM files with export default { ... }.',
@@ -202,11 +204,16 @@ function registerPublicTools(server: McpServer, store: DemoStore) {
   })
 }
 
-export async function handleMcp(req: IncomingMessage, res: ServerResponse, store: DemoStore, mode: 'public' | 'admin' = 'public') {
+export async function handleMcp(req: IncomingMessage, res: ServerResponse, store: DemoStore, music: MusicStore, mode: 'public' | 'admin' = 'public') {
 
   const server = new McpServer({ name: 'cafe-mcp-customization', version: '0.1.0' })
-  if (mode === 'admin') registerAdminTools(server, store)
-  else registerPublicTools(server, store)
+  if (mode === 'admin') {
+    registerAdminTools(server, store)
+    registerMusicAdminTools(server, music)
+  } else {
+    registerPublicTools(server, store)
+    registerMusicPublicTools(server, music)
+  }
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
   try {
     await server.connect(transport)
