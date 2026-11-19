@@ -9,7 +9,7 @@ try {
   await client.connect(new StreamableHTTPClientTransport(new URL(endpoint)))
   const tools = await client.listTools()
   const names = tools.tools.map(tool => tool.name)
-  for (const required of ['customize_interface', 'music_get_state', 'music_list_sounds', 'music_compose', 'music_set_controls', 'music_stop', 'music_play']) {
+  for (const required of ['customize_interface', 'music_get_state', 'music_list_sounds', 'music_load_piano_demo', 'music_compose', 'music_set_controls', 'music_stop', 'music_play']) {
     assert.ok(names.includes(required), 'Missing public MCP tool: ' + required)
   }
   const created = await client.callTool({

@@ -44,3 +44,6 @@ references
 
 # Nix / Direnv
 .direnv/
+
+# CodeGraph local knowledge graph; regenerable via `codegraph init -y .`
+.codegraph/

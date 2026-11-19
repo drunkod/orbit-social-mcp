@@ -17,13 +17,13 @@ export function registerMusicPublicTools(server: McpServer, music: MusicStore): 
   }, async () => ok(music.publicState()))
 
   server.registerTool('music_list_sounds', {
-    description: 'List core Strudel drum samples, bank names, supported synths and mini-notation. The full dynamic StrudelLM browser soundMap is available through its original listSamples tool.',
+    description: 'List Strudel drum samples, bank names, synthesized waveforms, sampled piano, melodic demo presets and mini-notation. The full dynamic StrudelLM browser soundMap is available through its original listSamples tool.',
     inputSchema: {},
     annotations: { readOnlyHint: true }
   }, async () => ok(musicSoundCatalog))
 
   server.registerTool('music_compose', {
-    description: 'Compose ORIGINAL electronic music from structured Strudel drum/bass/melody patterns. The server generates code, tempo and volume sliders. An open Music Studio automatically validates and plays it after audio has been enabled in that browser. Use successive calls to revise it. Do not imitate a specific copyrighted recording.',
+    description: 'Compose original music with Strudel mini-notation. Choose preset=piano-drums to play the exact original StrudelLM sampled-piano-and-drums example with its built-in piano slider and pianoroll/scope. For custom tunes, supply melody and instrument=piano, plus optional drums/bass. The server generates code and dynamic tempo/volume controls. An open Music Studio automatically validates and plays it after audio has been enabled in that browser. Use successive calls to revise it. Do not imitate a specific copyrighted recording.',
     inputSchema: musicComposeSchema.shape,
     annotations: { readOnlyHint: false, destructiveHint: false }
   }, async input => {
@@ -38,8 +38,21 @@ export function registerMusicPublicTools(server: McpServer, music: MusicStore): 
     } catch (error) { return fail(error) }
   })
 
+  server.registerTool('music_load_piano_demo', {
+    description: 'Load and play the exact original StrudelLM piano-and-drums source from StrudelLM DEFAULT_CODE: acoustic sampled piano c3 e3 g3 b3, bd sd [bd bd] sd drums, piano slider, pianoroll and scope. Use this when comparing the original strudellm.com/chat demo or requesting a melodic example. Playback requires enabling browser audio first.',
+    inputSchema: {},
+    annotations: { readOnlyHint: false, destructiveHint: false }
+  }, async () => {
+    try {
+      const state = await music.compose({ preset: 'piano-drums', title: 'Original StrudelLM Piano + Drums', bpm: 120, volume: 0.5 })
+      return ok({ success: true, revision: state.revision, title: state.title, code: state.code,
+        controls: state.controls, status: 'queued_for_browser', studio: '/music/studio',
+        note: 'The program matches StrudelLM DEFAULT_CODE. Enable Audio in the browser to play and confirm via music_get_state.feedback.' })
+    } catch (error) { return fail(error) }
+  })
+
   server.registerTool('music_set_controls', {
-    description: 'Change tempo (BPM) and/or overall volume; regenerate and hot-reload the Strudel code and associated sliders in the Music Studio.',
+    description: 'Change tempo (BPM) and/or gain (piano volume for the upstream demo, mix volume for custom music); regenerate and hot-reload the Strudel code and associated sliders in the Music Studio.',
     inputSchema: musicControlsSchema.innerType().shape,
     annotations: { readOnlyHint: false }
   }, async input => {

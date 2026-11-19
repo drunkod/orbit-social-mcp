@@ -20,6 +20,12 @@ const context = await browser.newContext({
 })
 const page = await context.newPage()
 const errors: string[] = []
+const sampleResponses: Array<{url: string; status: number}> = []
+page.on('response', response => {
+  if (/strudel\.b-cdn\.net\/(?:piano|tidal-drum-machines)/.test(response.url())) {
+    sampleResponses.push({ url: response.url(), status: response.status() })
+  }
+})
 page.on('pageerror', error => errors.push(error.message))
 const client = new Client({ name: 'strudellm-e2e', version: '0.1.0' })
 try {
@@ -71,10 +77,37 @@ try {
   await mobile.goto(base + '/music/studio', { waitUntil: 'domcontentloaded', timeout: 90000 })
   await mobile.getByText('Live code editor & player').waitFor({ timeout: 30000 })
   await mobile.screenshot({ path: path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio-mobile.png'), fullPage: true })
-  if (artifactDir) await page.waitForTimeout(1400) // visible final state for review recording
+  // Upstream-parity acceptance: use the same DEFAULT_CODE as strudellm.com/chat.
+  const demo = await client.callTool({ name: 'music_load_piano_demo', arguments: {} })
+  assert.equal(Boolean(demo.isError), false, JSON.stringify(demo.content))
+  const demoCode = await (await page.request.get(base + '/music-sync/state')).json() as { revision: number; code: string }
+  assert.match(demoCode.code, /note\("c3 e3 g3 b3"\)/)
+  assert.match(demoCode.code, /\.s\("piano"\)/)
+  assert.match(demoCode.code, /slider\(0\.5, 0, 1, 0\.01\)/)
+  assert.match(demoCode.code, /\._scope\(\{ height: 80 \}\)/)
+  assert.match(demoCode.code, /\._pianoroll\(\{ fold: 1 \}\)/)
+  await page.getByRole('heading', { name: 'Original StrudelLM Piano + Drums' }).waitFor({ timeout: 30000 })
+  let demoPlaying = false
+  for (let attempt = 0; attempt < 35; attempt++) {
+    const pianoState = await (await page.request.get(base + '/music-sync/state')).json() as {
+      feedback?: { revision: number; status: string; message?: string } | null; revision: number
+    }
+    if (pianoState.feedback?.revision === pianoState.revision && pianoState.feedback?.status === 'error') {
+      throw new Error('Original StrudelLM demo playback rejected: ' + pianoState.feedback.message)
+    }
+    if (pianoState.feedback?.revision === pianoState.revision && pianoState.feedback?.status === 'playing') {
+      demoPlaying = true
+      break
+    }
+    await page.waitForTimeout(1000)
+  }
+  assert.ok(demoPlaying, 'Exact original piano demo must play after MCP update')
+  await page.screenshot({ path: path.join(artifactDir ?? '/tmp', 'strudel-mcp-original-piano.png'), fullPage: true })
+  await page.waitForTimeout(1400) // Capture the fully updated original piano demo in the review video.
+  console.log('PIANO_SAMPLE_NETWORK', JSON.stringify(sampleResponses.filter(v => v.url.includes('/piano'))))
   console.log(JSON.stringify({
     result: 'PASS', liveMcpMusic: true, generatedCodeVisible: true,
-    generatedSliders: 2, tempoSliderChangesServerCode: true,
+    generatedSliders: 2, tempoSliderChangesServerCode: true, exactOriginalPianoCode: true, originalPianoBrowserPlayback: demoPlaying,
     errors, screenshots: [path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio.png'), path.join(artifactDir ?? '/tmp', 'strudel-mcp-studio-mobile.png')]
   }, null, 2))
   if (errors.length) process.exitCode = 1

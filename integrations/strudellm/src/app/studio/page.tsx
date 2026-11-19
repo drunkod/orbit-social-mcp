@@ -222,7 +222,7 @@ function Studio() {
               )}
               {volumeControl && (
                 <label className="block text-sm space-y-2">
-                  <span className="flex justify-between"><span>Volume</span><strong>{Math.round(draft.volume * 100)}%</strong></span>
+                  <span className="flex justify-between"><span>{volumeControl.label}</span><strong>{Math.round(draft.volume * 100)}%</strong></span>
                   <input type="range" min={0} max={1} step={0.01} value={draft.volume}
                     onChange={e => setControl("volume", Number(e.target.value))} className="w-full accent-violet-500" />
                 </label>

@@ -81,10 +81,35 @@ ChatGPT calls music_list_sounds (optional) then music_compose with a typed param
 
 The generated Strudel source is displayed in the Studio and changes instantly on the next MCP call. Changing the tempo/volume sliders updates both code and the audio engine. The browser sends validation feedback; music_get_state reveals confirmed playing/error state. Browser autoplay restrictions mean **remote MCP cannot make a brand-new browser tab audible until its audio context is first activated by a user gesture**.
 
+## Why the original StrudelLM demo sounded more melodic
+
+CodeGraph index and `codegraph context`/`codegraph impact compileMusic` traced the real path from `music_compose` to `compileMusic` to `MusicStore` and `StrudelService.updateAndPlay`, with `prebake` resolving piano samples. The first MCP bridge **did not** compile the stock StrudelLM example: it used a low-frequency sine-wave bass, fixed TR-909 bank, and smaller track gains in place of the original sampled acoustic piano. The StrudelLM playback engine itself was not replaced or modified.
+
+The corrected public MCP endpoint offers **`music_load_piano_demo`** (no arguments), which generates the original upstream `StrudelService.DEFAULT_CODE` verbatim: `note("c3 e3 g3 b3").s("piano")`, piano volume `slider(0.5, 0, 1, 0.01)`, `._pianoroll({ fold: 1 })`, and `s("bd sd [bd bd] sd").gain(0.8)._scope({ height: 80 })`. The regular `music_compose({preset:"piano-drums"})` uses the same demo by default. When BPM or gain is changed, only the corresponding tempo prefix or built-in piano slider changes; the instrument and rhythm remain intact. The custom composer additionally supports `instrument: "piano"` and `bank: "default"` (unbanked stock drum samples).
+
+**Test-first acceptance:** new test first failed with the generated TR-909-only source when compared byte-for-byte against the upstream default, then passed after implementing the preset and tool. A real Chromium end-to-end test confirmed original code, successful audio-engine evaluation, the default piano sample-map and C3/D♯3/F♯3/C4 MP3 requests returning 200, and all visualizations being emitted. This checks browser sound loading, not physical speaker output. The unrelated CAFE chat and plugin regression still passed.
+
+**Try it in ChatGPT:** choose the existing CAFE Music Studio plugin and ask: *"Use `music_load_piano_demo` to play the exact original StrudelLM piano-and-drums example in my Music Studio. Do not replace the piano with a sine bass. Then call `music_get_state` to confirm it."* Keep https://tests-macbook-air.tail70b8a.ts.net:10000/music/studio open and click **Enable Audio** once.
+
+### CodeGraph analysis of the audio path
+
+```mermaid
+flowchart LR
+  A[ChatGPT MCP] --> B[music_load_piano_demo / music_compose]
+  B --> C[MusicStore.compose]
+  C --> D[compileMusic / upstream DEFAULT_CODE]
+  D --> E[Persistent music state + SSE]
+  E --> F[Studio.apply]
+  F --> G[StrudelService.updateAndPlay]
+  H[prebake: piano.json and audio samples] --> G
+  G --> I[Browser Web Audio + piano + drums]
+```
+
 ## Available MCP tools
 
 | Tool | Purpose |
 | --- | --- |
+| music_load_piano_demo | Reproduce exactly the original StrudelLM melodic piano-and-drums sample, visualizations and inline piano slider |
 | music_get_state | Inspect generated code, revision, controls, last browser feedback |
 | music_list_sounds | Retrieve known drum banks and instruments / mini-notation examples |
 | music_compose | Generate original multi-track Strudel code from constrained drum, bass and melody patterns |
