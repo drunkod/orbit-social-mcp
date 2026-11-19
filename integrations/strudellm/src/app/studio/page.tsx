@@ -37,6 +37,7 @@ function Studio() {
   const lastApplied = React.useRef(-1);
   const draftTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const busy = React.useRef(false);
+  const queuedUpdate = React.useRef<{ next: Music; activated: boolean } | null>(null);
   const audioReady = React.useRef(false);
   const engineReady = React.useRef(false);
   const latest = React.useRef<Music | null>(null);
@@ -54,8 +55,16 @@ function Studio() {
     } catch { /* The live code still works if feedback networking fails. */ }
   }, []);
 
-  const apply = React.useCallback(async (next: Music, activated = false) => {
-    if (!engineReady.current || busy.current) return;
+  const apply = React.useCallback(async function applyRemote(next: Music, activated = false) {
+    if (!engineReady.current) return;
+    if (busy.current) {
+      // REPL validation/sample loading is asynchronous. Do not discard newer SSE revisions.
+      // Keep only the most recent request (including stop) and apply it after validation.
+      if (!queuedUpdate.current || next.revision >= queuedUpdate.current.next.revision) {
+        queuedUpdate.current = { next, activated };
+      }
+      return;
+    }
     if (lastApplied.current === next.revision && !activated) return;
     lastApplied.current = next.revision;
     const service = StrudelService.instance();
@@ -92,6 +101,11 @@ function Studio() {
     } finally {
       busy.current = false;
       setWorking(false);
+      const pending = queuedUpdate.current;
+      queuedUpdate.current = null;
+      if (pending && pending.next.revision >= next.revision) {
+        void applyRemote(pending.next, pending.activated);
+      }
     }
   }, [feedback, setCode]);
 
@@ -103,6 +117,9 @@ function Studio() {
         if (!response.ok) throw new Error("Music state unavailable");
         const next = await response.json() as Music;
         if (!alive) return;
+        // SSE and HTTP refreshes can overlap; never replay an older composition.
+        if (next.revision < lastApplied.current ||
+            (queuedUpdate.current && next.revision < queuedUpdate.current.next.revision)) return;
         setRemote(next);
         setDraft(current => ({
           bpm: next.controls.find(c => c.key === "bpm")?.value ?? current.bpm,

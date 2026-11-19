@@ -21,6 +21,8 @@ const context = await browser.newContext({
 const page = await context.newPage()
 const errors: string[] = []
 const sampleResponses: Array<{url: string; status: number}> = []
+const failedRequests: Array<{url: string; reason: string}> = []
+page.on('requestfailed', request => { failedRequests.push({url: request.url(), reason: request.failure()?.errorText ?? 'unknown'}) })
 page.on('response', response => {
   if (/strudel\.b-cdn\.net\/(?:piano|tidal-drum-machines)/.test(response.url())) {
     sampleResponses.push({ url: response.url(), status: response.status() })
@@ -88,10 +90,12 @@ try {
   assert.match(demoCode.code, /\._pianoroll\(\{ fold: 1 \}\)/)
   await page.getByRole('heading', { name: 'Original StrudelLM Piano + Drums' }).waitFor({ timeout: 30000 })
   let demoPlaying = false
-  for (let attempt = 0; attempt < 35; attempt++) {
+  let lastPianoStatus = "not-received"
+  for (let attempt = 0; attempt < 60; attempt++) {
     const pianoState = await (await page.request.get(base + '/music-sync/state')).json() as {
       feedback?: { revision: number; status: string; message?: string } | null; revision: number
     }
+    lastPianoStatus = JSON.stringify({revision:pianoState.revision,feedback:pianoState.feedback})
     if (pianoState.feedback?.revision === pianoState.revision && pianoState.feedback?.status === 'error') {
       throw new Error('Original StrudelLM demo playback rejected: ' + pianoState.feedback.message)
     }
@@ -101,7 +105,9 @@ try {
     }
     await page.waitForTimeout(1000)
   }
-  assert.ok(demoPlaying, 'Exact original piano demo must play after MCP update')
+  assert.ok(demoPlaying, 'Exact original piano demo must play after MCP update. Last state: ' + lastPianoStatus +
+    '; piano HTTP: ' + JSON.stringify(sampleResponses.filter(v => v.url.includes('/piano'))) +
+    '; request failures: ' + JSON.stringify(failedRequests.slice(-12)) + '; JS: ' + JSON.stringify(errors.slice(-5)))
   await page.screenshot({ path: path.join(artifactDir ?? '/tmp', 'strudel-mcp-original-piano.png'), fullPage: true })
   await page.waitForTimeout(1400) // Capture the fully updated original piano demo in the review video.
   console.log('PIANO_SAMPLE_NETWORK', JSON.stringify(sampleResponses.filter(v => v.url.includes('/piano'))))
