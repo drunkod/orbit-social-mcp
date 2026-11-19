@@ -45,6 +45,15 @@ test('persisted music state broadcasts revisions, supports sliders and rollback-
     assert.equal(await store.reportFeedback({ revision: 2, status: 'error' }), false)
     assert.equal(await store.reportFeedback({ revision: 3, status: 'playing' }), true)
     assert.equal(store.publicState().feedback?.status, 'playing')
+    // A second tab may still need its own audio gesture. Its feedback cannot
+    // erase successful playback reported by the first tab for this revision.
+    assert.equal(await store.reportFeedback({ revision: 3, status: 'needs-gesture' }), true)
+    assert.equal(store.publicState().feedback?.status, 'playing')
+    assert.equal(await store.reportFeedback({ revision: 3, status: 'error', message: 'genuine scheduler failure' }), true)
+    assert.equal(store.publicState().feedback?.status, 'error')
+    assert.equal(await store.reportFeedback({ revision: 3, status: 'needs-gesture' }), true)
+    assert.equal(store.publicState().feedback?.status, 'error')
+    assert.equal(await store.reportFeedback({ revision: 3, status: 'playing' }), true)
     const stopped = await store.setPlaying(false)
     assert.equal(stopped.playing, false)
     assert.equal(changes, 3)

@@ -107,6 +107,14 @@ export class MusicStore {
   async reportFeedback(input: { revision: number; status: MusicFeedback['status']; message?: string }): Promise<boolean> {
     const op = this.queue.then(async () => {
       if (input.revision !== this.state.revision) return false
+      // Global playback status summarizes multiple open browser tabs.
+      // A background tab that has never enabled Web Audio can report
+      // 'needs-gesture', but that must not erase a valid 'playing' result
+      // from a different tab for the same composition revision.
+      // Actual scheduler errors still override playing, while needs-gesture
+      // cannot erase an existing playing, stopped, or error result.
+      if (input.status === 'needs-gesture' && this.state.feedback?.revision === input.revision &&
+          this.state.feedback.status !== 'needs-gesture') return true
       const feedback: MusicFeedback = {
         revision: input.revision, status: input.status,
         ...(input.message ? { message: input.message.slice(0, 1200) } : {}),
